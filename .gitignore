@@ -1,0 +1,7 @@
+sleeper
+sleeper-*
+*.core
+core.*
+docker/qemu-*-static
+gdb-*.txt
+results/build-*.log

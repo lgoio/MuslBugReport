@@ -1,0 +1,23 @@
+# plain run. This file and gdb_unwinder_command_file
+# differ in exactly one line: the source of gdb_musl_unwinder.py.
+#
+# How gdb reaches the process is not decided here - entrypoint.sh writes
+# /tmp/connect.gdb, because it differs per platform: attach where ptrace
+# works, target remote via qemu's gdb server where it does not.
+
+set sysroot /
+# Bounds a runaway unwind: without it a bad unwinder keeps producing
+# frames and gdb spins at 100% CPU instead of failing visibly.
+set backtrace limit 64
+set pagination off
+set height unlimited
+set width unlimited
+set confirm off
+set verbose off
+set print inferior-events off
+set print thread-events off
+
+source /tmp/connect.gdb
+
+thread apply all -c bt
+quit

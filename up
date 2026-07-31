@@ -1,0 +1,62 @@
+#!/bin/sh
+# Start one long-running container per platform, with the test program's
+# threads already parked, so everything can be inspected by hand.
+#
+#     ./up                 all four platforms
+#     ./up armv7 aarch64   only these
+#     ./sh armv7           shell into one
+#     ./down               stop and remove them again
+#
+# The sources are bind-mounted, so editing sleeper.c or the gdb command files
+# takes effect on the next ./down + ./up without rebuilding the image.
+set -u
+
+WORKDIR=$(cd "$(dirname "$0")" && pwd)
+IMAGE_PREFIX=alpine-bugreport
+NAME_PREFIX=bugreport
+PLATFORMS="linux/amd64:x86_64 linux/arm/v6:armhf linux/arm/v7:armv7 linux/arm64:aarch64"
+
+DOCKER="docker"
+docker info >/dev/null 2>&1 || DOCKER="sudo docker"
+
+WANTED="$*"
+
+for ENTRY in $PLATFORMS; do
+	PLAT=${ENTRY%%:*}
+	LABEL=${ENTRY##*:}
+
+	# No arguments means all platforms.
+	if [ -n "$WANTED" ]; then
+		echo " $WANTED " | grep -q " $LABEL " || continue
+	fi
+
+	IMAGE="$IMAGE_PREFIX-$LABEL"
+	NAME="$NAME_PREFIX-$LABEL"
+
+	if ! $DOCKER run --rm --platform "$PLAT" alpine:3.23 true >/dev/null 2>&1; then
+		printf '%-10s skipped - %s cannot run here (see ./run-on-host.sh)\n' "$LABEL" "$PLAT"
+		continue
+	fi
+
+	if ! $DOCKER image inspect "$IMAGE" >/dev/null 2>&1; then
+		printf '%-10s building image\n' "$LABEL"
+		$DOCKER build -f "$WORKDIR/docker/Dockerfile.$LABEL" -t "$IMAGE" "$WORKDIR" >/dev/null 2>&1 \
+			|| { printf '%-10s build failed\n' "$LABEL"; continue; }
+	fi
+
+	$DOCKER rm -f "$NAME" >/dev/null 2>&1
+	# No --platform here: the image is already architecture-specific
+		# (docker/Dockerfile.$LABEL), and passing it makes docker refuse the
+		# local image and try to pull instead.
+		$DOCKER run -d --name "$NAME" \
+		--cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
+		-v "$WORKDIR/container":/work -w /work \
+		"$IMAGE" /bin/sh /work/daemon.sh >/dev/null \
+		&& printf '%-10s up   (%s)\n' "$LABEL" "$NAME" \
+		|| printf '%-10s failed to start\n' "$LABEL"
+done
+
+echo
+echo "shell into one:   ./sh armv7"
+echo "logs:             docker logs $NAME_PREFIX-armv7"
+echo "stop all:         ./down"

@@ -1,0 +1,27 @@
+#!/bin/sh
+# Stop and remove the containers started by ./up.
+#
+#     ./down               all of them
+#     ./down armv7         only this one
+set -u
+
+NAME_PREFIX=bugreport
+DOCKER="docker"
+docker info >/dev/null 2>&1 || DOCKER="sudo docker"
+
+WANTED="$*"
+FOUND=no
+
+for NAME in $($DOCKER ps -a --format '{{.Names}}' | grep "^${NAME_PREFIX}-" 2>/dev/null); do
+	LABEL=${NAME#${NAME_PREFIX}-}
+	if [ -n "$WANTED" ]; then
+		echo " $WANTED " | grep -q " $LABEL " || continue
+	fi
+	$DOCKER rm -f "$NAME" >/dev/null 2>&1 \
+		&& printf '%-10s down\n' "$LABEL" \
+		|| printf '%-10s could not be removed\n' "$LABEL"
+	FOUND=yes
+done
+
+[ "$FOUND" = no ] && echo "nothing running"
+exit 0
