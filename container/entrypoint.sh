@@ -103,7 +103,11 @@ printf 'live backtrace\n'
 case "$(apk --print-arch)" in
 	armhf|armv7) QEMU=/usr/bin/qemu-arm-static ;;
 	aarch64)     QEMU=/usr/bin/qemu-aarch64-static ;;
-	*)           QEMU="" ;;
+	riscv64)     QEMU=/usr/bin/qemu-riscv64-static ;;
+	ppc64le)     QEMU=/usr/bin/qemu-ppc64le-static ;;
+	s390x)       QEMU=/usr/bin/qemu-s390x-static ;;
+	loongarch64) QEMU=/usr/bin/qemu-loongarch64-static ;;
+	*)           QEMU="" ;;   # x86_64 and x86 run natively, ptrace works
 esac
 
 run_pass() {
@@ -115,7 +119,10 @@ run_pass() {
 		# The program starts at the entry point, hence break parked/continue.
 		"$QEMU" -g 1234 "$BIN" >/dev/null 2>&1 &
 		TARGET_PID=$!
-		sleep 2
+		# Emulation is slow and varies by target; 2 s was not enough for
+		# loongarch64, where the program had not parked yet and the backtrace
+		# below showed startup frames instead.
+		sleep 5
 		printf 'target remote :1234\nbreak parked\ncontinue\ndelete breakpoints\n' \
 			> /tmp/connect.gdb
 	else
@@ -136,6 +143,11 @@ run_pass() {
 	wait "$TARGET_PID" 2>/dev/null
 
 	[ "$RC" -eq 124 ] && printf 'gdb did not finish within 120 s\n' >> "$LOG"
+	# Without this the section below looks like a backtrace of the parked
+	# threads when it is really one of program startup - a reader would draw
+	# the wrong conclusion from it.
+	grep -q 'hit Breakpoint' "$LOG" || printf \
+		'NOTE: the breakpoint was never hit, so the frames above are startup\n      frames, not sleeping threads - nothing about the unwind gap can be\n      concluded from them. Run without a debugger and the program does\n      park its threads, so this is the emulated gdb server not honouring\n      the breakpoint, not a property of musl. The FDE coverage above is\n      read from the ELF files and is unaffected.\n' >> "$LOG"
 	[ "$RC" -ne 0 ] && [ "$RC" -ne 124 ] && printf 'gdb exited with %s\n' "$RC" >> "$LOG"
 	cat "$LOG"
 }

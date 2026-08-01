@@ -1,0 +1,21 @@
+# loongarch64. Alpine builds the packages but publishes no Docker image for this
+# architecture, so the image is assembled from the release minirootfs instead.
+# Everything else matches the other Dockerfiles.
+#
+#   docker build -f docker/Dockerfile.loongarch64 -t alpine-bugreport-loongarch64 .
+FROM scratch
+
+ADD docker/alpine-minirootfs-loongarch64.tar.gz /
+
+COPY docker/qemu-loongarch64-static /usr/bin/
+
+RUN apk add --no-cache \
+    build-base \
+    gdb \
+    musl-dbg \
+    binutils \
+    elfutils
+
+WORKDIR /work
+
+CMD ["/bin/sh", "/work/entrypoint.sh"]

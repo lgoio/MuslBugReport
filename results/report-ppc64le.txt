@@ -1,0 +1,146 @@
+WARNING: The requested image's platform (linux/ppc64le) does not match the detected host platform (linux/amd64/v3) and no specific platform was requested
+
+============================================================
+ musl unwind gap - ppc64le
+============================================================
+
+environment
+  arch           ppc64le / ppc64le
+  musl           Version 1.2.6
+  gdb            (GDB) 16.3
+  gcc            gcc (Alpine 15.2.0) 15.2.0
+  musl-dbg       installed
+
+the test program itself
+  unwind info    eh_frame 
+  built with     -g -O2 -fno-inline -funwind-tables -pthread
+
+musl unwind coverage
+  debug file   /usr/lib/debug/lib/ld-musl-powerpc64le.so.1.debug
+  FDEs         1872
+
+  symbol             address        FDE
+  ----------------------------------------------------------
+  __syscall_cp_asm   0x000000000008acb4 MISSING
+  __cp_begin         0x000000000008acb4 MISSING
+  __cp_end           0x000000000008ace0 MISSING
+  ----------------------------------------------------------
+
+VERDICT  3 of 3 symbols on the cancellable-syscall path have no FDE.
+         Every blocking call - poll, nanosleep, pthread_cond_timedwait -
+         passes through them, so no sleeping thread can be unwound.
+
+live backtrace
+
+  --- without gdb_musl_unwinder.py ---
+  0x00000040028acd0c in _dlstart () from /lib/ld-musl-powerpc64le.so.1
+  Breakpoint 1 at 0x4000000ec0: file sleeper.c, line 107.
+  
+  Thread 1 hit Breakpoint 1, parked () at sleeper.c:107
+  107		__asm__ __volatile__("" ::: "memory");
+  
+  Thread 4 (Thread 1.184 (CPU#3 [running])):
+  #0  __cp_end () at src/thread/powerpc64/syscall_cp.s:32
+  #1  0x0000004002899e50 in __syscall_cp_c (nr=221, u=2, v=274921285936, w=0, x=0, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x0000004002898504 in __syscall_cp (nr=<optimized out>, nr@entry=221, u=<optimized out>, u@entry=274921286068, v=<optimized out>, w=<optimized out>, w@entry=2, x=<optimized out>, x@entry=274921285936, y=<optimized out>, y@entry=0, z=<optimized out>, z@entry=0) at src/thread/__syscall_cp.c:19
+  #3  0x00000040028985f8 in __futex4_cp (addr=0x400295e9b4, op=128, val=2, to=<optimized out>) at src/thread/__timedwait.c:24
+  #4  __timedwait_cp (addr=addr@entry=0x400295e9b4, val=val@entry=2, clk=clk@entry=0, at=at@entry=0x400295ea58, priv=128, priv@entry=1) at src/thread/__timedwait.c:52
+  #5  0x000000400289a5a0 in __pthread_cond_timedwait (c=c@entry=0x4000020068 <g_cond>, m=m@entry=0x4000020040 <g_mutex>, ts=ts@entry=0x400295ea58) at src/thread/pthread_cond_timedwait.c:100
+  #6  0x000000400000100c in park_in_cond () at sleeper.c:60
+  #7  0x000000400000107c in level_three (kind=<optimized out>) at sleeper.c:74
+  #8  0x00000040000010ac in level_two (kind=<optimized out>) at sleeper.c:81
+  #9  0x00000040000010cc in level_one (kind=<optimized out>) at sleeper.c:86
+  #10 0x00000040000010fc in worker (arg=<optimized out>) at sleeper.c:91
+  #11 0x000000400289b73c in start (p=0x400295eb00) at src/thread/pthread_create.c:207
+  #12 0x00000040028accac in __clone () at src/thread/powerpc64/clone.s:44
+  
+  Thread 3 (Thread 1.183 (CPU#2 [running])):
+  #0  __cp_end () at src/thread/powerpc64/syscall_cp.s:32
+  #1  0x0000004002899eb0 in __syscall_cp_c (nr=162, u=0, v=0, w=0, x=0, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x0000004002898504 in __syscall_cp (nr=<optimized out>, nr@entry=162, u=<optimized out>, u@entry=0, v=<optimized out>, v@entry=0, w=<optimized out>, w@entry=0, x=<optimized out>, x@entry=0, y=<optimized out>, y@entry=0, z=<optimized out>, z@entry=0) at src/thread/__syscall_cp.c:19
+  #3  0x00000040028a1a00 in __clock_nanosleep (clk=0, flags=0, req=<optimized out>, rem=<optimized out>) at src/time/clock_nanosleep.c:33
+  #4  __clock_nanosleep (clk=clk@entry=0, flags=flags@entry=0, req=<optimized out>, req@entry=0x400293ba60, rem=<optimized out>, rem@entry=0x0) at src/time/clock_nanosleep.c:8
+  #5  0x00000040028a215c in nanosleep (req=<optimized out>, req@entry=0x400293ba60, rem=<optimized out>, rem@entry=0x0) at src/time/nanosleep.c:6
+  #6  0x0000004000000f5c in park_in_sleep () at sleeper.c:50
+  #7  0x0000004000001084 in level_three (kind=<optimized out>) at sleeper.c:71
+  #8  0x00000040000010ac in level_two (kind=<optimized out>) at sleeper.c:81
+  #9  0x00000040000010cc in level_one (kind=<optimized out>) at sleeper.c:86
+  #10 0x00000040000010fc in worker (arg=<optimized out>) at sleeper.c:91
+  #11 0x000000400289b73c in start (p=0x400293bb00) at src/thread/pthread_create.c:207
+  #12 0x00000040028accac in __clone () at src/thread/powerpc64/clone.s:44
+  
+  Thread 2 (Thread 1.182 (CPU#1 [running])):
+  #0  __cp_end () at src/thread/powerpc64/syscall_cp.s:32
+  #1  0x0000004002899eb0 in __syscall_cp_c (nr=167, u=-1, v=0, w=0, x=0, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x0000004002898504 in __syscall_cp (nr=<optimized out>, nr@entry=167, u=<optimized out>, u@entry=0, v=<optimized out>, v@entry=0, w=<optimized out>, w@entry=-1, x=<optimized out>, x@entry=0, y=<optimized out>, y@entry=0, z=<optimized out>, z@entry=0) at src/thread/__syscall_cp.c:19
+  #3  0x0000004002881ff8 in poll (fds=<optimized out>, fds@entry=0x0, n=<optimized out>, n@entry=0, timeout=<optimized out>, timeout@entry=-1) at src/select/poll.c:9
+  #4  0x0000004000000ef4 in park_in_poll () at sleeper.c:42
+  #5  0x0000004000001094 in level_three (kind=<optimized out>) at sleeper.c:68
+  #6  0x00000040000010ac in level_two (kind=<optimized out>) at sleeper.c:81
+  #7  0x00000040000010cc in level_one (kind=<optimized out>) at sleeper.c:86
+  #8  0x00000040000010fc in worker (arg=<optimized out>) at sleeper.c:91
+  #9  0x000000400289b73c in start (p=0x4002918b00) at src/thread/pthread_create.c:207
+  #10 0x00000040028accac in __clone () at src/thread/powerpc64/clone.s:44
+  
+  Thread 1 (Thread 1.156 (CPU#0 [running])):
+  #0  parked () at sleeper.c:107
+  #1  0x0000004000000bf4 in main () at sleeper.c:126
+
+  --- with gdb_musl_unwinder.py (one line different) ---
+  0x00000040028acd0c in _dlstart () from /lib/ld-musl-powerpc64le.so.1
+  Breakpoint 1 at 0x4000000ec0: file sleeper.c, line 107.
+  
+  Thread 1 hit Breakpoint 1, parked () at sleeper.c:107
+  107		__asm__ __volatile__("" ::: "memory");
+  Loaded unwinder: musl-syscall-cp (arm32 + aarch64; thread apply all -c bt)
+  
+  Thread 4 (Thread 1.220 (CPU#3 [running])):
+  #0  __cp_end () at src/thread/powerpc64/syscall_cp.s:32
+  #1  0x0000004002899e50 in __syscall_cp_c (nr=221, u=2, v=274921285936, w=0, x=0, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x0000004002898504 in __syscall_cp (nr=<optimized out>, nr@entry=221, u=<optimized out>, u@entry=274921286068, v=<optimized out>, w=<optimized out>, w@entry=2, x=<optimized out>, x@entry=274921285936, y=<optimized out>, y@entry=0, z=<optimized out>, z@entry=0) at src/thread/__syscall_cp.c:19
+  #3  0x00000040028985f8 in __futex4_cp (addr=0x400295e9b4, op=128, val=2, to=<optimized out>) at src/thread/__timedwait.c:24
+  #4  __timedwait_cp (addr=addr@entry=0x400295e9b4, val=val@entry=2, clk=clk@entry=0, at=at@entry=0x400295ea58, priv=128, priv@entry=1) at src/thread/__timedwait.c:52
+  #5  0x000000400289a5a0 in __pthread_cond_timedwait (c=c@entry=0x4000020068 <g_cond>, m=m@entry=0x4000020040 <g_mutex>, ts=ts@entry=0x400295ea58) at src/thread/pthread_cond_timedwait.c:100
+  #6  0x000000400000100c in park_in_cond () at sleeper.c:60
+  #7  0x000000400000107c in level_three (kind=<optimized out>) at sleeper.c:74
+  #8  0x00000040000010ac in level_two (kind=<optimized out>) at sleeper.c:81
+  #9  0x00000040000010cc in level_one (kind=<optimized out>) at sleeper.c:86
+  #10 0x00000040000010fc in worker (arg=<optimized out>) at sleeper.c:91
+  #11 0x000000400289b73c in start (p=0x400295eb00) at src/thread/pthread_create.c:207
+  #12 0x00000040028accac in __clone () at src/thread/powerpc64/clone.s:44
+  
+  Thread 3 (Thread 1.219 (CPU#2 [running])):
+  #0  __cp_end () at src/thread/powerpc64/syscall_cp.s:32
+  #1  0x0000004002899eb0 in __syscall_cp_c (nr=162, u=0, v=0, w=0, x=0, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x0000004002898504 in __syscall_cp (nr=<optimized out>, nr@entry=162, u=<optimized out>, u@entry=0, v=<optimized out>, v@entry=0, w=<optimized out>, w@entry=0, x=<optimized out>, x@entry=0, y=<optimized out>, y@entry=0, z=<optimized out>, z@entry=0) at src/thread/__syscall_cp.c:19
+  #3  0x00000040028a1a00 in __clock_nanosleep (clk=0, flags=0, req=<optimized out>, rem=<optimized out>) at src/time/clock_nanosleep.c:33
+  #4  __clock_nanosleep (clk=clk@entry=0, flags=flags@entry=0, req=<optimized out>, req@entry=0x400293ba60, rem=<optimized out>, rem@entry=0x0) at src/time/clock_nanosleep.c:8
+  #5  0x00000040028a215c in nanosleep (req=<optimized out>, req@entry=0x400293ba60, rem=<optimized out>, rem@entry=0x0) at src/time/nanosleep.c:6
+  #6  0x0000004000000f5c in park_in_sleep () at sleeper.c:50
+  #7  0x0000004000001084 in level_three (kind=<optimized out>) at sleeper.c:71
+  #8  0x00000040000010ac in level_two (kind=<optimized out>) at sleeper.c:81
+  #9  0x00000040000010cc in level_one (kind=<optimized out>) at sleeper.c:86
+  #10 0x00000040000010fc in worker (arg=<optimized out>) at sleeper.c:91
+  #11 0x000000400289b73c in start (p=0x400293bb00) at src/thread/pthread_create.c:207
+  #12 0x00000040028accac in __clone () at src/thread/powerpc64/clone.s:44
+  
+  Thread 2 (Thread 1.218 (CPU#1 [running])):
+  #0  __cp_end () at src/thread/powerpc64/syscall_cp.s:32
+  #1  0x0000004002899eb0 in __syscall_cp_c (nr=167, u=-1, v=0, w=0, x=0, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x0000004002898504 in __syscall_cp (nr=<optimized out>, nr@entry=167, u=<optimized out>, u@entry=0, v=<optimized out>, v@entry=0, w=<optimized out>, w@entry=-1, x=<optimized out>, x@entry=0, y=<optimized out>, y@entry=0, z=<optimized out>, z@entry=0) at src/thread/__syscall_cp.c:19
+  #3  0x0000004002881ff8 in poll (fds=<optimized out>, fds@entry=0x0, n=<optimized out>, n@entry=0, timeout=<optimized out>, timeout@entry=-1) at src/select/poll.c:9
+  #4  0x0000004000000ef4 in park_in_poll () at sleeper.c:42
+  #5  0x0000004000001094 in level_three (kind=<optimized out>) at sleeper.c:68
+  #6  0x00000040000010ac in level_two (kind=<optimized out>) at sleeper.c:81
+  #7  0x00000040000010cc in level_one (kind=<optimized out>) at sleeper.c:86
+  #8  0x00000040000010fc in worker (arg=<optimized out>) at sleeper.c:91
+  #9  0x000000400289b73c in start (p=0x4002918b00) at src/thread/pthread_create.c:207
+  #10 0x00000040028accac in __clone () at src/thread/powerpc64/clone.s:44
+  
+  Thread 1 (Thread 1.192 (CPU#0 [running])):
+  #0  parked () at sleeper.c:107
+  #1  0x0000004000000bf4 in main () at sleeper.c:126
+  __cp_begin..__cp_end: 0x40028accb4..0x40028acce0
+  musl-syscall-cp: applied 0 times
+    declined (powerpc:common64: musl covers __cp_begin, nothing to do): 29
+

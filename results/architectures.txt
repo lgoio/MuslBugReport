@@ -1,0 +1,46 @@
+=== how many architectures have this gap
+
+Every architecture writes __syscall_cp_asm and __clone in assembly, and
+unwind information for hand-written assembly only exists if somebody puts
+it there. musl generates it with tools/add-cfi.$ARCH.awk - and that file
+exists for two architectures.
+
+From the musl 1.2.6 source tree:
+
+  ARCH         syscall_cp     clone        add-cfi.awk .cfi_ in asm
+  -------------------------------------------------------------------
+  aarch64      syscall_cp.s   clone.s      -          0
+  arm          syscall_cp.s   clone.s      -          0
+  i386         syscall_cp.s   clone.s      yes        0
+  loongarch64  syscall_cp.s   clone.s      -          0
+  m68k         syscall_cp.s   clone.s      -          0
+  microblaze   syscall_cp.s   clone.s      -          0
+  mips         syscall_cp.s   clone.s      -          0
+  mips64       syscall_cp.s   clone.s      -          0
+  mipsn32      syscall_cp.s   clone.s      -          0
+  or1k         syscall_cp.s   clone.s      -          0
+  powerpc      syscall_cp.s   clone.s      -          0
+  powerpc64    syscall_cp.s   clone.s      -          0
+  riscv32      syscall_cp.s   clone.s      -          0
+  riscv64      syscall_cp.s   clone.s      -          0
+  s390x        syscall_cp.s   clone.s      -          0
+  sh           syscall_cp.s   clone.s      -          0
+  x32          syscall_cp.s   clone.s      -          0
+  x86_64       syscall_cp.s   clone.s      yes        0
+
+16 of the 18 architectures that have this assembly have no way to annotate it.
+
+--- measured, not deduced ---
+
+Alpine 3.24 (musl 1.2.6-r2) plus musl-dbg, asking whether any FDE covers
+each symbol. Read out of the shipped ELF files; no debugger involved.
+
+  symbol             x86_64    armhf     armv7     aarch64   riscv64   ppc64le   s390x
+  ---------------------------------------------------------------------------------
+  __syscall_cp_asm   ok        MISSING   MISSING   MISSING   MISSING   MISSING   MISSING
+  __cp_begin         ok        MISSING   MISSING   MISSING   MISSING   MISSING   MISSING
+  __cp_end           ok        MISSING   MISSING   MISSING   MISSING   MISSING   MISSING
+  __clone            ok        MISSING   MISSING   MISSING   MISSING   MISSING   MISSING
+
+riscv32 is not packaged by Alpine, so it is only covered by the source
+survey above - it has the same two files and the same absence.

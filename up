@@ -14,7 +14,7 @@ set -u
 WORKDIR=$(cd "$(dirname "$0")" && pwd)
 IMAGE_PREFIX=alpine-bugreport
 NAME_PREFIX=bugreport
-PLATFORMS="linux/amd64:x86_64 linux/arm/v6:armhf linux/arm/v7:armv7 linux/arm64:aarch64"
+PLATFORMS="linux/amd64:x86_64 linux/arm/v6:armhf linux/arm/v7:armv7 linux/arm64:aarch64 linux/riscv64:riscv64 linux/ppc64le:ppc64le linux/s390x:s390x linux/loong64:loongarch64"
 
 DOCKER="docker"
 docker info >/dev/null 2>&1 || DOCKER="sudo docker"

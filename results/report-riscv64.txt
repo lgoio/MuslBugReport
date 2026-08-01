@@ -1,0 +1,149 @@
+WARNING: The requested image's platform (linux/riscv64) does not match the detected host platform (linux/amd64/v3) and no specific platform was requested
+
+============================================================
+ musl unwind gap - riscv64
+============================================================
+
+environment
+  arch           riscv64 / riscv64
+  musl           Version 1.2.6
+  gdb            (GDB) 16.3
+  gcc            gcc (Alpine 15.2.0) 15.2.0
+  musl-dbg       installed
+
+the test program itself
+  unwind info    eh_frame 
+  built with     -g -O2 -fno-inline -funwind-tables -pthread
+
+musl unwind coverage
+  debug file   /usr/lib/debug/lib/ld-musl-riscv64.so.1.debug
+  FDEs         1872
+
+  symbol             address        FDE
+  ----------------------------------------------------------
+  __syscall_cp_asm   0x0000000000052b92 MISSING
+  __cp_begin         0x0000000000052b92 MISSING
+  __cp_end           0x0000000000052bb0 MISSING
+  __syscall_cp_c     0x000000000005060a ok
+  nanosleep          0x0000000000054eaa ok
+  poll               0x00000000000444b6 ok
+  ----------------------------------------------------------
+
+VERDICT  3 of 6 symbols on the cancellable-syscall path have no FDE.
+         Every blocking call - poll, nanosleep, pthread_cond_timedwait -
+         passes through them, so no sleeping thread can be unwound.
+
+live backtrace
+
+  --- without gdb_musl_unwinder.py ---
+  0x000000400285b2c4 in _dlstart () from /lib/ld-musl-riscv64.so.1
+  Breakpoint 1 at 0x4000000c1e: file sleeper.c, line 107.
+  
+  Thread 1 hit Breakpoint 1, parked () at sleeper.c:107
+  107		__asm__ __volatile__("" ::: "memory");
+  
+  Thread 4 (Thread 1.184 (CPU#3 [running])):
+  #0  __cp_end () at src/thread/riscv64/syscall_cp.s:27
+  #1  0x0000004002854644 in __syscall_cp_c (nr=98, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=<optimized out>, z=<optimized out>) at src/thread/pthread_cancel.c:33
+  #2  0x0000004002853b62 in __futex4_cp (addr=0x4002906a24, op=128, val=2, to=<optimized out>) at src/thread/__timedwait.c:24
+  #3  __timedwait_cp (addr=addr@entry=0x4002906a24, val=val@entry=2, clk=clk@entry=0, at=at@entry=0x4002906a98, priv=128, priv@entry=1) at src/thread/__timedwait.c:52
+  #4  0x00000040028549d2 in __pthread_cond_timedwait (c=c@entry=0x4000002068 <g_cond>, m=m@entry=0x4000002040 <g_mutex>, ts=ts@entry=0x4002906a98) at src/thread/pthread_cond_timedwait.c:100
+  #5  0x0000004000000cb2 in park_in_cond () at sleeper.c:60
+  #6  0x0000004000000cde in level_three (kind=<optimized out>) at sleeper.c:74
+  #7  0x0000004000000ce4 in level_two (kind=<optimized out>) at sleeper.c:81
+  #8  0x0000004000000ce6 in level_one (kind=<optimized out>) at sleeper.c:86
+  #9  0x0000004000000cf0 in worker (arg=<optimized out>) at sleeper.c:91
+  #10 0x00000040028552ee in start (p=<optimized out>) at src/thread/pthread_create.c:207
+  #11 0x0000004002856b8a in __clone () at src/thread/riscv64/clone.s:31
+  Backtrace stopped: frame did not save the PC
+  
+  Thread 3 (Thread 1.183 (CPU#2 [running])):
+  #0  __cp_end () at src/thread/riscv64/syscall_cp.s:27
+  #1  0x0000004002854644 in __syscall_cp_c (nr=101, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=<optimized out>, z=<optimized out>) at src/thread/pthread_cancel.c:33
+  #2  0x0000004002858bac in __clock_nanosleep (clk=0, flags=0, req=0x0, rem=0x0) at src/time/clock_nanosleep.c:33
+  #3  __clock_nanosleep (clk=clk@entry=0, flags=flags@entry=0, req=req@entry=0x40028e3a98, rem=rem@entry=0x0) at src/time/clock_nanosleep.c:8
+  #4  0x0000004002858eba in nanosleep (req=req@entry=0x40028e3a98, rem=rem@entry=0x0) at src/time/nanosleep.c:6
+  #5  0x0000004000000c4e in park_in_sleep () at sleeper.c:50
+  #6  0x0000004000000ce0 in level_three (kind=<optimized out>) at sleeper.c:71
+  #7  0x0000004000000ce4 in level_two (kind=<optimized out>) at sleeper.c:81
+  #8  0x0000004000000ce6 in level_one (kind=<optimized out>) at sleeper.c:86
+  #9  0x0000004000000cf0 in worker (arg=<optimized out>) at sleeper.c:91
+  #10 0x00000040028552ee in start (p=<optimized out>) at src/thread/pthread_create.c:207
+  #11 0x0000004002856b8a in __clone () at src/thread/riscv64/clone.s:31
+  Backtrace stopped: frame did not save the PC
+  
+  Thread 2 (Thread 1.182 (CPU#1 [running])):
+  #0  __cp_end () at src/thread/riscv64/syscall_cp.s:27
+  #1  0x0000004002854644 in __syscall_cp_c (nr=73, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=<optimized out>, z=<optimized out>) at src/thread/pthread_cancel.c:33
+  #2  0x0000004002848506 in poll (fds=fds@entry=0x0, n=n@entry=0, timeout=timeout@entry=-1) at src/select/poll.c:16
+  #3  0x0000004000000c28 in poll (__f=0x0, __n=0, __s=-1) at /usr/include/fortify/poll.h:40
+  #4  0x0000004000000ce2 in level_three (kind=<optimized out>) at sleeper.c:68
+  #5  0x0000004000000ce4 in level_two (kind=<optimized out>) at sleeper.c:81
+  #6  0x0000004000000ce6 in level_one (kind=<optimized out>) at sleeper.c:86
+  #7  0x0000004000000cf0 in worker (arg=<optimized out>) at sleeper.c:91
+  #8  0x00000040028552ee in start (p=<optimized out>) at src/thread/pthread_create.c:207
+  #9  0x0000004002856b8a in __clone () at src/thread/riscv64/clone.s:31
+  Backtrace stopped: frame did not save the PC
+  
+  Thread 1 (Thread 1.156 (CPU#0 [running])):
+  #0  parked () at sleeper.c:107
+  #1  0x0000004000000adc in main () at sleeper.c:126
+
+  --- with gdb_musl_unwinder.py (one line different) ---
+  0x000000400285b2c4 in _dlstart () from /lib/ld-musl-riscv64.so.1
+  Breakpoint 1 at 0x4000000c1e: file sleeper.c, line 107.
+  
+  Thread 1 hit Breakpoint 1, parked () at sleeper.c:107
+  107		__asm__ __volatile__("" ::: "memory");
+  Loaded unwinder: musl-syscall-cp (arm32 + aarch64; thread apply all -c bt)
+  
+  Thread 4 (Thread 1.220 (CPU#3 [running])):
+  #0  __cp_end () at src/thread/riscv64/syscall_cp.s:27
+  #1  0x0000004002854644 in __syscall_cp_c (nr=98, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=<optimized out>, z=<optimized out>) at src/thread/pthread_cancel.c:33
+  #2  0x0000004002853b62 in __futex4_cp (addr=0x4002906a24, op=128, val=2, to=<optimized out>) at src/thread/__timedwait.c:24
+  #3  __timedwait_cp (addr=addr@entry=0x4002906a24, val=val@entry=2, clk=clk@entry=0, at=at@entry=0x4002906a98, priv=128, priv@entry=1) at src/thread/__timedwait.c:52
+  #4  0x00000040028549d2 in __pthread_cond_timedwait (c=c@entry=0x4000002068 <g_cond>, m=m@entry=0x4000002040 <g_mutex>, ts=ts@entry=0x4002906a98) at src/thread/pthread_cond_timedwait.c:100
+  #5  0x0000004000000cb2 in park_in_cond () at sleeper.c:60
+  #6  0x0000004000000cde in level_three (kind=<optimized out>) at sleeper.c:74
+  #7  0x0000004000000ce4 in level_two (kind=<optimized out>) at sleeper.c:81
+  #8  0x0000004000000ce6 in level_one (kind=<optimized out>) at sleeper.c:86
+  #9  0x0000004000000cf0 in worker (arg=<optimized out>) at sleeper.c:91
+  #10 0x00000040028552ee in start (p=<optimized out>) at src/thread/pthread_create.c:207
+  #11 0x0000004002856b8a in __clone () at src/thread/riscv64/clone.s:31
+  Backtrace stopped: frame did not save the PC
+  
+  Thread 3 (Thread 1.219 (CPU#2 [running])):
+  #0  __cp_end () at src/thread/riscv64/syscall_cp.s:27
+  #1  0x0000004002854644 in __syscall_cp_c (nr=101, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=<optimized out>, z=<optimized out>) at src/thread/pthread_cancel.c:33
+  #2  0x0000004002858bac in __clock_nanosleep (clk=0, flags=0, req=0x0, rem=0x0) at src/time/clock_nanosleep.c:33
+  #3  __clock_nanosleep (clk=clk@entry=0, flags=flags@entry=0, req=req@entry=0x40028e3a98, rem=rem@entry=0x0) at src/time/clock_nanosleep.c:8
+  #4  0x0000004002858eba in nanosleep (req=req@entry=0x40028e3a98, rem=rem@entry=0x0) at src/time/nanosleep.c:6
+  #5  0x0000004000000c4e in park_in_sleep () at sleeper.c:50
+  #6  0x0000004000000ce0 in level_three (kind=<optimized out>) at sleeper.c:71
+  #7  0x0000004000000ce4 in level_two (kind=<optimized out>) at sleeper.c:81
+  #8  0x0000004000000ce6 in level_one (kind=<optimized out>) at sleeper.c:86
+  #9  0x0000004000000cf0 in worker (arg=<optimized out>) at sleeper.c:91
+  #10 0x00000040028552ee in start (p=<optimized out>) at src/thread/pthread_create.c:207
+  #11 0x0000004002856b8a in __clone () at src/thread/riscv64/clone.s:31
+  Backtrace stopped: frame did not save the PC
+  
+  Thread 2 (Thread 1.218 (CPU#1 [running])):
+  #0  __cp_end () at src/thread/riscv64/syscall_cp.s:27
+  #1  0x0000004002854644 in __syscall_cp_c (nr=73, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=<optimized out>, z=<optimized out>) at src/thread/pthread_cancel.c:33
+  #2  0x0000004002848506 in poll (fds=fds@entry=0x0, n=n@entry=0, timeout=timeout@entry=-1) at src/select/poll.c:16
+  #3  0x0000004000000c28 in poll (__f=0x0, __n=0, __s=-1) at /usr/include/fortify/poll.h:40
+  #4  0x0000004000000ce2 in level_three (kind=<optimized out>) at sleeper.c:68
+  #5  0x0000004000000ce4 in level_two (kind=<optimized out>) at sleeper.c:81
+  #6  0x0000004000000ce6 in level_one (kind=<optimized out>) at sleeper.c:86
+  #7  0x0000004000000cf0 in worker (arg=<optimized out>) at sleeper.c:91
+  #8  0x00000040028552ee in start (p=<optimized out>) at src/thread/pthread_create.c:207
+  #9  0x0000004002856b8a in __clone () at src/thread/riscv64/clone.s:31
+  Backtrace stopped: frame did not save the PC
+  
+  Thread 1 (Thread 1.192 (CPU#0 [running])):
+  #0  parked () at sleeper.c:107
+  #1  0x0000004000000adc in main () at sleeper.c:126
+  __cp_begin..__cp_end: 0x4002856b92..0x4002856bb0
+  musl-syscall-cp: applied 0 times
+    declined (riscv:rv64: musl covers __cp_begin, nothing to do): 25
+

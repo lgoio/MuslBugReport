@@ -21,7 +21,7 @@ IMAGE_PREFIX=alpine-bugreport
 
 # docker platform : label, used for the image tag and the result file.
 # The labels are Alpine's own architecture names.
-PLATFORMS="linux/amd64:x86_64 linux/arm/v6:armhf linux/arm/v7:armv7 linux/arm64:aarch64"
+PLATFORMS="linux/amd64:x86_64 linux/arm/v6:armhf linux/arm/v7:armv7 linux/arm64:aarch64 linux/riscv64:riscv64 linux/ppc64le:ppc64le linux/s390x:s390x linux/loong64:loongarch64"
 
 say()  { printf '%s\n' "$*"; }
 head1() { printf '\n=== %s\n' "$*"; }
@@ -154,6 +154,13 @@ head1 "emulation"
 # registration details differ between qemu-user-static, binfmt-support and
 # docker's own installer, so checking package names would prove nothing.
 platform_works() {
+	# Alpine builds loongarch64 packages but publishes no Docker image for it,
+	# so there is nothing to probe with - Dockerfile.loongarch64 assembles the
+	# image from the release minirootfs instead. Ask the kernel directly.
+	if [ "$1" = linux/loong64 ]; then
+		[ -e /proc/sys/fs/binfmt_misc/qemu-loongarch64 ]
+		return
+	fi
 	$DOCKER run --rm --platform "$1" alpine:3.24 true >/dev/null 2>&1
 }
 
@@ -207,6 +214,76 @@ else
 		say ""
 	else
 		say "    all platforms run now."
+	fi
+fi
+
+########################################################################
+head1 "qemu binaries for the images"
+# Each image carries a static qemu of its own. With Docker's binfmt "F" flag the
+# kernel opens the host interpreter at registration time, so it is invisible
+# inside the container and gdb is left with ptrace, which qemu-user does not
+# implement. The host packages are no help here either - they ship dynamically
+# linked binaries, which cannot run in an Alpine image. They are therefore taken
+# out of the multiarch/qemu-user-static image, which is the only portable source.
+qemu_for_label() {
+	case "$1" in
+		armhf|armv7) printf 'qemu-arm-static' ;;
+		aarch64)     printf 'qemu-aarch64-static' ;;
+		riscv64)     printf 'qemu-riscv64-static' ;;
+		ppc64le)     printf 'qemu-ppc64le-static' ;;
+		s390x)       printf 'qemu-s390x-static' ;;
+		loongarch64) printf 'qemu-loongarch64-static' ;;
+		*)           printf '' ;;   # x86_64 runs natively
+	esac
+}
+
+# loongarch64 has no Docker image at all; its Dockerfile builds one from the
+# Alpine release minirootfs, which is fetched here rather than kept in the tree.
+ROOTFS="$WORKDIR/docker/alpine-minirootfs-loongarch64.tar.gz"
+ROOTFS_URL=https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/loongarch64/alpine-minirootfs-3.24.1-loongarch64.tar.gz
+case " $PLATFORMS " in *loongarch64*)
+	if [ -f "$ROOTFS" ]; then
+		say "    loongarch64 minirootfs present."
+	elif ask "Download the Alpine loongarch64 minirootfs (3 MB)?"; then
+		if command -v curl >/dev/null 2>&1; then
+			curl -sSfL "$ROOTFS_URL" -o "$ROOTFS" && say "    fetched $(basename "$ROOTFS")" \
+				|| say "    could not download the minirootfs"
+		else
+			wget -q "$ROOTFS_URL" -O "$ROOTFS" && say "    fetched $(basename "$ROOTFS")" \
+				|| say "    could not download the minirootfs"
+		fi
+	else
+		say "    skipping - the loongarch64 image will fail to build."
+	fi ;;
+esac
+
+NEEDED=""
+for ENTRY in $PLATFORMS; do
+	BIN=$(qemu_for_label "${ENTRY##*:}")
+	[ -n "$BIN" ] && [ ! -f "$WORKDIR/docker/$BIN" ] && NEEDED="$NEEDED $BIN"
+done
+
+if [ -z "$NEEDED" ]; then
+	say "    all present."
+else
+	say "    missing:$NEEDED"
+	if ask "Copy them out of the multiarch/qemu-user-static image?"; then
+		# "docker create" rather than "docker run": the image's entrypoint wants
+		# to register binfmt handlers and fails without privileges. Nothing has
+		# to run - the files are copied straight out of the created container.
+		CID=$($DOCKER create multiarch/qemu-user-static true 2>/dev/null)
+		if [ -n "$CID" ]; then
+			for BIN in $NEEDED; do
+				$DOCKER cp "$CID:/usr/bin/$BIN" "$WORKDIR/docker/$BIN" 2>/dev/null \
+					&& say "    fetched $BIN" \
+					|| say "    could not fetch $BIN"
+			done
+			$DOCKER rm -f "$CID" >/dev/null 2>&1
+		else
+			say "    could not create a container from multiarch/qemu-user-static"
+		fi
+	else
+		say "    skipping - the affected images will fail to build."
 	fi
 fi
 

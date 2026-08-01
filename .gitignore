@@ -6,3 +6,4 @@ docker/qemu-*-static
 gdb-*.txt
 results/build-*.log
 mail-to-musl*.txt
+docker/alpine-minirootfs-*.tar.gz

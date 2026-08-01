@@ -1,0 +1,30 @@
+# ppc64le. The base image is the architecture-specific one, so the build needs
+# no --platform flag.
+#
+# qemu-ppc64le-static is copied in from the build context rather than relied upon
+# from the host: with Docker's binfmt "F" flag the kernel opens the interpreter
+# at registration time and it is invisible inside the container - it cannot be
+# invoked, and gdb is then left with ptrace, which qemu-user does not
+# implement:
+#
+#     (gdb) run
+#     warning: ptrace: Function not implemented
+#
+# With it present, qemu can be started with its own gdb server and gdb talks to
+# that instead. ../run-on-host.sh fetches the binary if it is missing.
+#
+#   docker build -f docker/Dockerfile.ppc64le -t alpine-bugreport-ppc64le .
+FROM --platform=linux/ppc64le ppc64le/alpine:3.24
+
+COPY docker/qemu-ppc64le-static /usr/bin/
+
+RUN apk add --no-cache \
+    build-base \
+    gdb \
+    musl-dbg \
+    binutils \
+    elfutils
+
+WORKDIR /work
+
+CMD ["/bin/sh", "/work/entrypoint.sh"]

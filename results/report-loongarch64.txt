@@ -1,0 +1,94 @@
+
+============================================================
+ musl unwind gap - loongarch64
+============================================================
+
+environment
+  arch           loongarch64 / loongarch64
+  musl           Version 1.2.6
+  gdb            (GDB) 16.3
+  gcc            gcc (Alpine 15.2.0) 15.2.0
+  musl-dbg       installed
+
+the test program itself
+  unwind info    eh_frame 
+  built with     -g -O2 -fno-inline -funwind-tables -pthread
+
+musl unwind coverage
+  debug file   /usr/lib/debug/lib/ld-musl-loongarch64.so.1.debug
+  FDEs         1868
+
+  symbol             address        FDE
+  ----------------------------------------------------------
+  __syscall_cp_asm   0x00000000000783ec MISSING
+  __cp_begin         0x00000000000783ec MISSING
+  __cp_end           0x0000000000078418 MISSING
+  __syscall_cp_c     0x000000000006af28 ok
+  nanosleep          0x0000000000070d70 ok
+  poll               0x000000000005a110 ok
+  ----------------------------------------------------------
+
+VERDICT  3 of 6 symbols on the cancellable-syscall path have no FDE.
+         Every blocking call - poll, nanosleep, pthread_cond_timedwait -
+         passes through them, so no sleeping thread can be unwound.
+
+live backtrace
+
+  --- without gdb_musl_unwinder.py ---
+  warning: while parsing target description (at line 1): Could not load XML document "loongarch-base64.xml"
+  warning: Could not load XML target description; ignoring
+  0x00000040028a0424 in _dlstart () from /lib/ld-musl-loongarch64.so.1
+  Breakpoint 1 at 0x4000000e60: file sleeper.c, line 107.
+  
+  Program received signal SIGILL, Illegal instruction.
+  0x000000400288fab4 in memset (dest=0x4000020098, c=c@entry=0, n=16232) at src/string/memset.c:69
+  warning: 69	src/string/memset.c: No such file or directory
+  
+  Thread 1 (Thread 1.156 (CPU#0 [running])):
+  #0  0x000000400288fab4 in memset (dest=0x4000020098, c=c@entry=0, n=16232) at src/string/memset.c:69
+  #1  0x00000040028548c4 in donate (base=<optimized out>, len=<optimized out>) at src/malloc/mallocng/donate.c:16
+  #2  __malloc_donate (start=<optimized out>, end=<optimized out>) at src/malloc/mallocng/donate.c:38
+  #3  0x000000400289d35c in reclaim (dso=0x40028ea900 <app>, start=<optimized out>, end=<optimized out>) at ldso/dynlink.c:608
+  #4  reclaim_gaps (dso=dso@entry=0x40028ea900 <app>) at ldso/dynlink.c:621
+  #5  0x000000400289ee90 in __dls3 (sp=<optimized out>, auxv=0x4002827e08) at ldso/dynlink.c:1956
+  #6  0x000000400289eae0 in __dls2 (base=<optimized out>, sp=0x4002827dc0) at ldso/dynlink.c:1765
+  #7  0x0000000000000000 in ?? ()
+  Backtrace stopped: frame did not save the PC
+  NOTE: the breakpoint was never hit, so the frames above are startup
+        frames, not sleeping threads - nothing about the unwind gap can be
+        concluded from them. Run without a debugger and the program does
+        park its threads, so this is the emulated gdb server not honouring
+        the breakpoint, not a property of musl. The FDE coverage above is
+        read from the ELF files and is unaffected.
+
+  --- with gdb_musl_unwinder.py (one line different) ---
+  warning: while parsing target description (at line 1): Could not load XML document "loongarch-base64.xml"
+  warning: Could not load XML target description; ignoring
+  0x00000040028a0424 in _dlstart () from /lib/ld-musl-loongarch64.so.1
+  Breakpoint 1 at 0x4000000e60: file sleeper.c, line 107.
+  
+  Program received signal SIGILL, Illegal instruction.
+  0x000000400288fab4 in memset (dest=0x4000020098, c=c@entry=0, n=16232) at src/string/memset.c:69
+  warning: 69	src/string/memset.c: No such file or directory
+  Loaded unwinder: musl-syscall-cp (arm32 + aarch64; thread apply all -c bt)
+  
+  Thread 1 (Thread 1.192 (CPU#0 [running])):
+  #0  0x000000400288fab4 in memset (dest=0x4000020098, c=c@entry=0, n=16232) at src/string/memset.c:69
+  #1  0x00000040028548c4 in donate (base=<optimized out>, len=<optimized out>) at src/malloc/mallocng/donate.c:16
+  #2  __malloc_donate (start=<optimized out>, end=<optimized out>) at src/malloc/mallocng/donate.c:38
+  #3  0x000000400289d35c in reclaim (dso=0x40028ea900 <app>, start=<optimized out>, end=<optimized out>) at ldso/dynlink.c:608
+  #4  reclaim_gaps (dso=dso@entry=0x40028ea900 <app>) at ldso/dynlink.c:621
+  #5  0x000000400289ee90 in __dls3 (sp=<optimized out>, auxv=0x4002827e08) at ldso/dynlink.c:1956
+  #6  0x000000400289eae0 in __dls2 (base=<optimized out>, sp=0x4002827dc0) at ldso/dynlink.c:1765
+  #7  0x0000000000000000 in ?? ()
+  Backtrace stopped: frame did not save the PC
+  __cp_begin..__cp_end: 0x40028a03ec..0x40028a0418
+  musl-syscall-cp: applied 0 times
+    declined: 0
+  NOTE: the breakpoint was never hit, so the frames above are startup
+        frames, not sleeping threads - nothing about the unwind gap can be
+        concluded from them. Run without a debugger and the program does
+        park its threads, so this is the emulated gdb server not honouring
+        the breakpoint, not a property of musl. The FDE coverage above is
+        read from the ELF files and is unaffected.
+

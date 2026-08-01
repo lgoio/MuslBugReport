@@ -1,0 +1,30 @@
+# riscv64. The base image is the architecture-specific one, so the build needs
+# no --platform flag.
+#
+# qemu-riscv64-static is copied in from the build context rather than relied upon
+# from the host: with Docker's binfmt "F" flag the kernel opens the interpreter
+# at registration time and it is invisible inside the container - it cannot be
+# invoked, and gdb is then left with ptrace, which qemu-user does not
+# implement:
+#
+#     (gdb) run
+#     warning: ptrace: Function not implemented
+#
+# With it present, qemu can be started with its own gdb server and gdb talks to
+# that instead. ../run-on-host.sh fetches the binary if it is missing.
+#
+#   docker build -f docker/Dockerfile.riscv64 -t alpine-bugreport-riscv64 .
+FROM --platform=linux/riscv64 riscv64/alpine:3.24
+
+COPY docker/qemu-riscv64-static /usr/bin/
+
+RUN apk add --no-cache \
+    build-base \
+    gdb \
+    musl-dbg \
+    binutils \
+    elfutils
+
+WORKDIR /work
+
+CMD ["/bin/sh", "/work/entrypoint.sh"]

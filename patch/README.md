@@ -1,14 +1,31 @@
-# A patch
+# A fix
 
-[`cfi-arm-aarch64.diff`](cfi-arm-aarch64.diff) adds `.cfi_*` directives to the
-four assembly files that carry the gap, against musl 1.2.6:
+musl already knows how to do this. `configure` looks for
+`tools/add-cfi.$ARCH.awk`, and where it finds one, every `.s` file goes through
+it at build time and comes out annotated. That file exists for `i386` and
+`x86_64`. For the other sixteen architectures it does not, which is the whole
+bug — see [`../results/architectures.txt`](../results/architectures.txt).
+
+So the fix is to write the missing ones. [`tools/`](tools/) has six — every
+affected architecture Alpine builds, and therefore every one this reproducer can
+actually run:
 
 ```
-src/thread/arm/syscall_cp.s
-src/thread/arm/clone.s
-src/thread/aarch64/syscall_cp.s
-src/thread/aarch64/clone.s
+tools/add-cfi.arm.awk
+tools/add-cfi.aarch64.awk
+tools/add-cfi.riscv64.awk
+tools/add-cfi.powerpc64.awk
+tools/add-cfi.s390x.awk
+tools/add-cfi.loongarch64.awk
 ```
+
+**No source file is edited.** Drop them into an untouched musl tree and
+`configure` turns `ADD_CFI` on by itself. A build without `-g` is unaffected:
+`ADD_CFI` stays off, the assembly goes through unannotated, exactly as today.
+
+The generated code does not change either. `.cfi_*` directives emit a debug
+section and no instructions, so `.text` comes out byte-identical to a stock
+build — measured over the whole library, not argued from the definition.
 
 ## Not the same thing as the gdb add-on
 
@@ -21,62 +38,43 @@ to prove where the gap is. It is not a fix, and it cannot become one:
   change to the stub silently invalidates it.
 - Somebody has to know it exists and load it.
 
-The patch puts the information in the library, where every consumer finds it —
-including the ones that cannot load a Python script. The two are not
-alternatives; the add-on is a diagnostic, the patch is the repair.
+The generators put the information in the library, where every consumer finds
+it — including the ones that cannot load a Python script.
 
-## The generator variant, tried and measured
+## What they do
 
-musl generates these directives on i386 and x86_64 instead of writing them out,
-so the obvious question is whether arm should do the same. Rather than argue
-about it, [`tools/add-cfi.arm.awk`](tools/add-cfi.arm.awk) and
-[`tools/add-cfi.aarch64.awk`](tools/add-cfi.aarch64.awk) are here, written after
-`add-cfi.x86_64.awk`. Dropped into an otherwise untouched 1.2.6 tree, `configure`
-finds them and turns `ADD_CFI` on by itself.
+Each is written after `add-cfi.x86_64.awk` and keeps its structure: a linear
+pass that tracks what the stack pointer does, which registers still hold the
+caller's values, and where a function begins and ends. Each starts with
+`.cfi_sections .debug_frame`, the same choice musl already makes there —
+*"don't put CFI data in the .eh_frame ELF section (which we don't keep)"*.
 
-Both architectures build, and every sleeping thread unwinds to its entry point —
-the generator does the job. Full output:
-[`../results/patch-generators.txt`](../results/patch-generators.txt).
+Two things are worth calling out.
 
-It cannot finish `clone.s`. Ending a thread stack means marking the return
-address undefined in the child path, and nothing in the assembly says which path
-that is: it is knowledge about what the function *means*, not about what it
-does. On arm `__clone` therefore still repeats until the backtrace limit; on
-aarch64 it stops, but with `corrupt stack?` rather than cleanly.
+**Branches, without flow analysis.** In `arm/syscall_cp.s`, `__cp_cancel` is
+branched to with the registers still on the stack, while the instruction before
+it has just popped them. A linear pass would carry the popped state into
+`__cp_cancel` and describe that frame wrongly — which is worse than describing
+nothing, because a debugger would then report confident nonsense. Bracketing the
+pop with `.cfi_remember_state` / `.cfi_restore_state` and restoring at the
+return fixes it without any analysis: a return ends a path, so whatever follows
+inherits the state from before the pop.
 
-So the two are not alternatives — `clone.s` needs that one directive either way:
+**The end of a thread stack.** musl zeroes the frame pointer in the child half
+of `clone.s` — `mov fp,#0` on arm, `mov x29,0` on aarch64, `move $fp,$zero` on
+loongarch64 — so that frame-pointer unwinders stop there. The generators read
+that as what it is and say the same thing in CFI, with `.cfi_undefined` for the
+return-address register.
 
-| | generator | written out |
-|---|---|---|
-| sleeping threads unwind | yes | yes |
-| `__clone` repetition ends | no | yes |
-| files touched | 13 per architecture | 4 |
-| new files | 2 | 0 |
-| `_init` in `crti.s` | FDE covers the prologue only | untouched |
+That matters on 32-bit ARM. Once the syscall frame is described, the backtrace
+reaches `__clone` and, without the termination, repeats it until the backtrace
+limit. On the architectures that carry no such marker — riscv64, powerpc64,
+s390x — the generators emit no termination, and measurement says none is needed:
+`__clone` appears exactly once per thread there today.
 
-The last row is a side effect of turning `ADD_CFI` on for everything: `_init` is
-assembled from several objects, so a per-file generator only ever sees its
-prologue. x86 does not hit this because its `crti.s` carries no `.type`
-directive, and the generator only starts a frame at labels that have one.
-
-## What it does
-
-Each file gets `.cfi_sections .debug_frame`, the same choice musl already makes
-in `tools/add-cfi.x86_64.awk` — *"don't put CFI data in the .eh_frame ELF
-section (which we don't keep)"*. Nothing lands in `.eh_frame`.
-
-**`syscall_cp.s`** — 32-bit ARM pushes four registers and returns through `lr`,
-so the frame needs `.cfi_adjust_cfa_offset 16` and one `.cfi_rel_offset` per
-saved register. `__cp_end` pops them again while `__cp_cancel` is branched to
-with the registers still saved, so the pop is bracketed by
-`.cfi_remember_state` / `.cfi_restore_state`. aarch64 has no prologue at all:
-`.cfi_startproc` and `.cfi_endproc` are enough, because the default rules
-(CFA = `sp`, return address in `x30`) already describe it.
-
-**`clone.s`** — the same treatment for the parent path, plus `.cfi_undefined`
-for the return-address register in the child. That is the marker for the
-outermost frame, and it is what stops a backtrace from repeating `__clone`
-until it hits a limit.
+Clearing the return-address register instead, the way musl's `_start` does, does
+not work here: all three call the thread function with a linking branch
+(`jalr`, `basr`, `bctrl`), which sets that register again immediately.
 
 ## Verifying it
 
@@ -87,17 +85,29 @@ until it hits a limit.
 
 Needs the images from [`../run-on-host.sh`](../run-on-host.sh).
 
-**Stage 1** assembles the two affected files before and after the patch and asks
-whether an FDE covers each symbol. It reads the objects directly, so it needs no
-debugger and no ARM hardware.
+**Stage 1** assembles the two affected files twice — once straight through the
+compiler, which is what musl does today, and once through the generator first —
+and asks whether an FDE covers each symbol. It reads the objects directly, so it
+needs no debugger and no hardware of that architecture.
 
-**Stage 2** builds all of musl from the patched source, links the reproducer's
-`sleeper.c` against it statically and takes a backtrace with **plain gdb** — no
-Python unwinder, no gdb add-on. The static link matters: the binary carries the
-patched musl itself, so neither a loader path nor an installed `musl-dbg`
-package can affect the result. It also prints `ADD_CFI` from `config.mak`, which
-stays `no` — the coverage comes from the patch, not from musl's own generator.
+**Stage 2** drops the generator into an untouched musl tree, builds it, replaces
+the container's libc and takes a backtrace with **plain gdb**. No Python
+unwinder, no gdb add-on. It prints `ADD_CFI` from `config.mak` so the source of
+the coverage is not in doubt.
 
-Output per architecture: [`../results/patch-armhf.txt`](../results/patch-armhf.txt),
-[`patch-armv7.txt`](../results/patch-armv7.txt),
-[`patch-aarch64.txt`](../results/patch-aarch64.txt).
+Results: [`../results/`](../results/).
+
+## Prior art
+
+- [2020-07-05](https://www.openwall.com/lists/musl/2020/07/05/1) — Daniel Santos
+  submits CFI for mipsel `__syscall_cp_asm`, with the same symptom: *"attaching a
+  debugger to a program making such a syscall results in the debugger being
+  completely unable to perform a backtrace"*. He wrote the directives into the
+  assembly by hand. Rich Felker's reply to the CFI itself was *"this part looks
+  ok"*; the patch was not merged because unrelated changes were bundled with it.
+- [2024-03-13](https://www.openwall.com/lists/musl/2024/03/13/6) — incomplete gdb
+  backtraces reported on aarch64 and armel. Szabolcs Nagy: musl has debug info
+  for asm on x86 only, generated by `tools/add-cfi.*.awk`, and *"if you provide
+  that for another target that will work too"*.
+
+This is that.

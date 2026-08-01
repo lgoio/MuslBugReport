@@ -39,58 +39,58 @@ live backtrace
   
   Thread 4 (LWP 69 "sleeper-x86_64"):
   #0  __cp_end () at src/thread/x86_64/syscall_cp.s:29
-  #1  0x000073c25c07a262 in __syscall_cp_c (nr=7, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
-  #2  0x000073c25c071d93 in poll (fds=fds@entry=0x0, n=n@entry=0, timeout=timeout@entry=-1) at src/select/poll.c:9
-  #3  0x000059308595932e in poll (__f=0x0, __n=0, __s=-1) at /usr/include/fortify/poll.h:40
-  #4  0x000059308595940d in level_three (kind=<optimized out>) at sleeper.c:68
-  #5  0x0000593085959412 in level_two (kind=<optimized out>) at sleeper.c:81
-  #6  0x0000593085959422 in level_one (kind=<optimized out>) at sleeper.c:86
-  #7  0x0000593085959439 in worker (arg=<optimized out>) at sleeper.c:91
-  #8  0x000073c25c07af6d in start (p=<optimized out>) at src/thread/pthread_create.c:207
-  #9  0x000073c25c07c8c0 in __clone () at src/thread/x86_64/clone.s:22
+  #1  0x000072b7e45ae262 in __syscall_cp_c (nr=7, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x000072b7e45a5d93 in poll (fds=fds@entry=0x0, n=n@entry=0, timeout=timeout@entry=-1) at src/select/poll.c:9
+  #3  0x000059cec6b8332e in poll (__f=0x0, __n=0, __s=-1) at /usr/include/fortify/poll.h:40
+  #4  0x000059cec6b8340d in level_three (kind=<optimized out>) at sleeper.c:68
+  #5  0x000059cec6b83412 in level_two (kind=<optimized out>) at sleeper.c:81
+  #6  0x000059cec6b83422 in level_one (kind=<optimized out>) at sleeper.c:86
+  #7  0x000059cec6b83439 in worker (arg=<optimized out>) at sleeper.c:91
+  #8  0x000072b7e45aef6d in start (p=<optimized out>) at src/thread/pthread_create.c:207
+  #9  0x000072b7e45b08c0 in __clone () at src/thread/x86_64/clone.s:22
   Backtrace stopped: frame did not save the PC
   
   Thread 3 (LWP 70 "sleeper-x86_64"):
   #0  __cp_end () at src/thread/x86_64/syscall_cp.s:29
-  #1  0x000073c25c07a262 in __syscall_cp_c (nr=35, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
-  #2  0x000073c25c07cfd4 in __clock_nanosleep (clk=0, flags=0, req=0x0, rem=0x0) at src/time/clock_nanosleep.c:33
-  #3  __clock_nanosleep (clk=clk@entry=0, flags=flags@entry=0, req=req@entry=0x73c25bfe7aa0, rem=rem@entry=0x0) at src/time/clock_nanosleep.c:8
-  #4  0x000073c25c07d38a in nanosleep (req=req@entry=0x73c25bfe7aa0, rem=rem@entry=0x0) at src/time/nanosleep.c:6
-  #5  0x000059308595935a in park_in_sleep () at sleeper.c:50
-  #6  0x0000593085959405 in level_three (kind=<optimized out>) at sleeper.c:71
-  #7  0x0000593085959412 in level_two (kind=<optimized out>) at sleeper.c:81
-  #8  0x0000593085959422 in level_one (kind=<optimized out>) at sleeper.c:86
-  #9  0x0000593085959439 in worker (arg=<optimized out>) at sleeper.c:91
-  #10 0x000073c25c07af6d in start (p=<optimized out>) at src/thread/pthread_create.c:207
-  #11 0x000073c25c07c8c0 in __clone () at src/thread/x86_64/clone.s:22
+  #1  0x000072b7e45ae262 in __syscall_cp_c (nr=35, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x000072b7e45b0fd4 in __clock_nanosleep (clk=0, flags=0, req=0x0, rem=0x0) at src/time/clock_nanosleep.c:33
+  #3  __clock_nanosleep (clk=clk@entry=0, flags=flags@entry=0, req=req@entry=0x72b7e451baa0, rem=rem@entry=0x0) at src/time/clock_nanosleep.c:8
+  #4  0x000072b7e45b138a in nanosleep (req=req@entry=0x72b7e451baa0, rem=rem@entry=0x0) at src/time/nanosleep.c:6
+  #5  0x000059cec6b8335a in park_in_sleep () at sleeper.c:50
+  #6  0x000059cec6b83405 in level_three (kind=<optimized out>) at sleeper.c:71
+  #7  0x000059cec6b83412 in level_two (kind=<optimized out>) at sleeper.c:81
+  #8  0x000059cec6b83422 in level_one (kind=<optimized out>) at sleeper.c:86
+  #9  0x000059cec6b83439 in worker (arg=<optimized out>) at sleeper.c:91
+  #10 0x000072b7e45aef6d in start (p=<optimized out>) at src/thread/pthread_create.c:207
+  #11 0x000072b7e45b08c0 in __clone () at src/thread/x86_64/clone.s:22
   Backtrace stopped: frame did not save the PC
   
   Thread 2 (LWP 71 "sleeper-x86_64"):
   #0  __cp_end () at src/thread/x86_64/syscall_cp.s:29
-  #1  0x000073c25c07a262 in __syscall_cp_c (nr=202, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
-  #2  0x000073c25c07971e in __futex4_cp (addr=0x73c25bfc4a54, op=0, val=2, to=<optimized out>) at src/thread/__timedwait.c:24
-  #3  __timedwait_cp (addr=addr@entry=0x73c25bfc4a54, val=val@entry=2, clk=clk@entry=0, at=at@entry=0x73c25bfc4aa0, priv=128, priv@entry=1) at src/thread/__timedwait.c:52
-  #4  0x000073c25c07a5ff in __pthread_cond_timedwait (c=c@entry=0x59308595c080 <g_cond>, m=m@entry=0x59308595c0c0 <g_mutex>, ts=ts@entry=0x73c25bfc4aa0) at src/thread/pthread_cond_timedwait.c:100
-  #5  0x00005930859593c7 in park_in_cond () at sleeper.c:60
-  #6  0x00005930859593fb in level_three (kind=<optimized out>) at sleeper.c:74
-  #7  0x0000593085959412 in level_two (kind=<optimized out>) at sleeper.c:81
-  #8  0x0000593085959422 in level_one (kind=<optimized out>) at sleeper.c:86
-  #9  0x0000593085959439 in worker (arg=<optimized out>) at sleeper.c:91
-  #10 0x000073c25c07af6d in start (p=<optimized out>) at src/thread/pthread_create.c:207
-  #11 0x000073c25c07c8c0 in __clone () at src/thread/x86_64/clone.s:22
+  #1  0x000072b7e45ae262 in __syscall_cp_c (nr=202, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x000072b7e45ad71e in __futex4_cp (addr=0x72b7e44f8a54, op=0, val=2, to=<optimized out>) at src/thread/__timedwait.c:24
+  #3  __timedwait_cp (addr=addr@entry=0x72b7e44f8a54, val=val@entry=2, clk=clk@entry=0, at=at@entry=0x72b7e44f8aa0, priv=128, priv@entry=1) at src/thread/__timedwait.c:52
+  #4  0x000072b7e45ae5ff in __pthread_cond_timedwait (c=c@entry=0x59cec6b86080 <g_cond>, m=m@entry=0x59cec6b860c0 <g_mutex>, ts=ts@entry=0x72b7e44f8aa0) at src/thread/pthread_cond_timedwait.c:100
+  #5  0x000059cec6b833c7 in park_in_cond () at sleeper.c:60
+  #6  0x000059cec6b833fb in level_three (kind=<optimized out>) at sleeper.c:74
+  #7  0x000059cec6b83412 in level_two (kind=<optimized out>) at sleeper.c:81
+  #8  0x000059cec6b83422 in level_one (kind=<optimized out>) at sleeper.c:86
+  #9  0x000059cec6b83439 in worker (arg=<optimized out>) at sleeper.c:91
+  #10 0x000072b7e45aef6d in start (p=<optimized out>) at src/thread/pthread_create.c:207
+  #11 0x000072b7e45b08c0 in __clone () at src/thread/x86_64/clone.s:22
   Backtrace stopped: frame did not save the PC
   
   Thread 1 (LWP 67 "sleeper-x86_64"):
   #0  __cp_end () at src/thread/x86_64/syscall_cp.s:29
-  #1  0x000073c25c07a262 in __syscall_cp_c (nr=35, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
-  #2  0x000073c25c07cfd4 in __clock_nanosleep (clk=0, flags=0, req=0x0, rem=0x0) at src/time/clock_nanosleep.c:33
-  #3  __clock_nanosleep (clk=clk@entry=0, flags=flags@entry=0, req=req@entry=0x7ffcb94dd2a0, rem=rem@entry=0x0) at src/time/clock_nanosleep.c:8
-  #4  0x000073c25c07d38a in nanosleep (req=req@entry=0x7ffcb94dd2a0, rem=rem@entry=0x0) at src/time/nanosleep.c:6
-  #5  0x000059308595935a in park_in_sleep () at sleeper.c:50
-  #6  0x0000593085959405 in level_three (kind=kind@entry=1) at sleeper.c:71
-  #7  0x0000593085959412 in level_two (kind=kind@entry=1) at sleeper.c:81
-  #8  0x0000593085959422 in level_one (kind=kind@entry=1) at sleeper.c:86
-  #9  0x0000593085959183 in main () at sleeper.c:129
+  #1  0x000072b7e45ae262 in __syscall_cp_c (nr=35, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x000072b7e45b0fd4 in __clock_nanosleep (clk=0, flags=0, req=0x0, rem=0x0) at src/time/clock_nanosleep.c:33
+  #3  __clock_nanosleep (clk=clk@entry=0, flags=flags@entry=0, req=req@entry=0x7ffdcd847b10, rem=rem@entry=0x0) at src/time/clock_nanosleep.c:8
+  #4  0x000072b7e45b138a in nanosleep (req=req@entry=0x7ffdcd847b10, rem=rem@entry=0x0) at src/time/nanosleep.c:6
+  #5  0x000059cec6b8335a in park_in_sleep () at sleeper.c:50
+  #6  0x000059cec6b83405 in level_three (kind=kind@entry=1) at sleeper.c:71
+  #7  0x000059cec6b83412 in level_two (kind=kind@entry=1) at sleeper.c:81
+  #8  0x000059cec6b83422 in level_one (kind=kind@entry=1) at sleeper.c:86
+  #9  0x000059cec6b83183 in main () at sleeper.c:129
 
   --- with gdb_musl_unwinder.py (one line different) ---
   __cp_end () at src/thread/x86_64/syscall_cp.s:29
@@ -99,59 +99,59 @@ live backtrace
   
   Thread 4 (LWP 91 "sleeper-x86_64"):
   #0  __cp_end () at src/thread/x86_64/syscall_cp.s:29
-  #1  0x000071fb01732262 in __syscall_cp_c (nr=7, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
-  #2  0x000071fb01729d93 in poll (fds=fds@entry=0x0, n=n@entry=0, timeout=timeout@entry=-1) at src/select/poll.c:9
-  #3  0x000062b6de8e832e in poll (__f=0x0, __n=0, __s=-1) at /usr/include/fortify/poll.h:40
-  #4  0x000062b6de8e840d in level_three (kind=<optimized out>) at sleeper.c:68
-  #5  0x000062b6de8e8412 in level_two (kind=<optimized out>) at sleeper.c:81
-  #6  0x000062b6de8e8422 in level_one (kind=<optimized out>) at sleeper.c:86
-  #7  0x000062b6de8e8439 in worker (arg=<optimized out>) at sleeper.c:91
-  #8  0x000071fb01732f6d in start (p=<optimized out>) at src/thread/pthread_create.c:207
-  #9  0x000071fb017348c0 in __clone () at src/thread/x86_64/clone.s:22
+  #1  0x000074a419d1f262 in __syscall_cp_c (nr=7, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x000074a419d16d93 in poll (fds=fds@entry=0x0, n=n@entry=0, timeout=timeout@entry=-1) at src/select/poll.c:9
+  #3  0x00005d391640532e in poll (__f=0x0, __n=0, __s=-1) at /usr/include/fortify/poll.h:40
+  #4  0x00005d391640540d in level_three (kind=<optimized out>) at sleeper.c:68
+  #5  0x00005d3916405412 in level_two (kind=<optimized out>) at sleeper.c:81
+  #6  0x00005d3916405422 in level_one (kind=<optimized out>) at sleeper.c:86
+  #7  0x00005d3916405439 in worker (arg=<optimized out>) at sleeper.c:91
+  #8  0x000074a419d1ff6d in start (p=<optimized out>) at src/thread/pthread_create.c:207
+  #9  0x000074a419d218c0 in __clone () at src/thread/x86_64/clone.s:22
   Backtrace stopped: frame did not save the PC
   
   Thread 3 (LWP 92 "sleeper-x86_64"):
   #0  __cp_end () at src/thread/x86_64/syscall_cp.s:29
-  #1  0x000071fb01732262 in __syscall_cp_c (nr=35, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
-  #2  0x000071fb01734fd4 in __clock_nanosleep (clk=0, flags=0, req=0x0, rem=0x0) at src/time/clock_nanosleep.c:33
-  #3  __clock_nanosleep (clk=clk@entry=0, flags=flags@entry=0, req=req@entry=0x71fb0169faa0, rem=rem@entry=0x0) at src/time/clock_nanosleep.c:8
-  #4  0x000071fb0173538a in nanosleep (req=req@entry=0x71fb0169faa0, rem=rem@entry=0x0) at src/time/nanosleep.c:6
-  #5  0x000062b6de8e835a in park_in_sleep () at sleeper.c:50
-  #6  0x000062b6de8e8405 in level_three (kind=<optimized out>) at sleeper.c:71
-  #7  0x000062b6de8e8412 in level_two (kind=<optimized out>) at sleeper.c:81
-  #8  0x000062b6de8e8422 in level_one (kind=<optimized out>) at sleeper.c:86
-  #9  0x000062b6de8e8439 in worker (arg=<optimized out>) at sleeper.c:91
-  #10 0x000071fb01732f6d in start (p=<optimized out>) at src/thread/pthread_create.c:207
-  #11 0x000071fb017348c0 in __clone () at src/thread/x86_64/clone.s:22
+  #1  0x000074a419d1f262 in __syscall_cp_c (nr=35, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x000074a419d21fd4 in __clock_nanosleep (clk=0, flags=0, req=0x0, rem=0x0) at src/time/clock_nanosleep.c:33
+  #3  __clock_nanosleep (clk=clk@entry=0, flags=flags@entry=0, req=req@entry=0x74a419c8caa0, rem=rem@entry=0x0) at src/time/clock_nanosleep.c:8
+  #4  0x000074a419d2238a in nanosleep (req=req@entry=0x74a419c8caa0, rem=rem@entry=0x0) at src/time/nanosleep.c:6
+  #5  0x00005d391640535a in park_in_sleep () at sleeper.c:50
+  #6  0x00005d3916405405 in level_three (kind=<optimized out>) at sleeper.c:71
+  #7  0x00005d3916405412 in level_two (kind=<optimized out>) at sleeper.c:81
+  #8  0x00005d3916405422 in level_one (kind=<optimized out>) at sleeper.c:86
+  #9  0x00005d3916405439 in worker (arg=<optimized out>) at sleeper.c:91
+  #10 0x000074a419d1ff6d in start (p=<optimized out>) at src/thread/pthread_create.c:207
+  #11 0x000074a419d218c0 in __clone () at src/thread/x86_64/clone.s:22
   Backtrace stopped: frame did not save the PC
   
   Thread 2 (LWP 93 "sleeper-x86_64"):
   #0  __cp_end () at src/thread/x86_64/syscall_cp.s:29
-  #1  0x000071fb01732262 in __syscall_cp_c (nr=202, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
-  #2  0x000071fb0173171e in __futex4_cp (addr=0x71fb0167ca54, op=0, val=2, to=<optimized out>) at src/thread/__timedwait.c:24
-  #3  __timedwait_cp (addr=addr@entry=0x71fb0167ca54, val=val@entry=2, clk=clk@entry=0, at=at@entry=0x71fb0167caa0, priv=128, priv@entry=1) at src/thread/__timedwait.c:52
-  #4  0x000071fb017325ff in __pthread_cond_timedwait (c=c@entry=0x62b6de8eb080 <g_cond>, m=m@entry=0x62b6de8eb0c0 <g_mutex>, ts=ts@entry=0x71fb0167caa0) at src/thread/pthread_cond_timedwait.c:100
-  #5  0x000062b6de8e83c7 in park_in_cond () at sleeper.c:60
-  #6  0x000062b6de8e83fb in level_three (kind=<optimized out>) at sleeper.c:74
-  #7  0x000062b6de8e8412 in level_two (kind=<optimized out>) at sleeper.c:81
-  #8  0x000062b6de8e8422 in level_one (kind=<optimized out>) at sleeper.c:86
-  #9  0x000062b6de8e8439 in worker (arg=<optimized out>) at sleeper.c:91
-  #10 0x000071fb01732f6d in start (p=<optimized out>) at src/thread/pthread_create.c:207
-  #11 0x000071fb017348c0 in __clone () at src/thread/x86_64/clone.s:22
+  #1  0x000074a419d1f262 in __syscall_cp_c (nr=202, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x000074a419d1e71e in __futex4_cp (addr=0x74a419c69a54, op=0, val=2, to=<optimized out>) at src/thread/__timedwait.c:24
+  #3  __timedwait_cp (addr=addr@entry=0x74a419c69a54, val=val@entry=2, clk=clk@entry=0, at=at@entry=0x74a419c69aa0, priv=128, priv@entry=1) at src/thread/__timedwait.c:52
+  #4  0x000074a419d1f5ff in __pthread_cond_timedwait (c=c@entry=0x5d3916408080 <g_cond>, m=m@entry=0x5d39164080c0 <g_mutex>, ts=ts@entry=0x74a419c69aa0) at src/thread/pthread_cond_timedwait.c:100
+  #5  0x00005d39164053c7 in park_in_cond () at sleeper.c:60
+  #6  0x00005d39164053fb in level_three (kind=<optimized out>) at sleeper.c:74
+  #7  0x00005d3916405412 in level_two (kind=<optimized out>) at sleeper.c:81
+  #8  0x00005d3916405422 in level_one (kind=<optimized out>) at sleeper.c:86
+  #9  0x00005d3916405439 in worker (arg=<optimized out>) at sleeper.c:91
+  #10 0x000074a419d1ff6d in start (p=<optimized out>) at src/thread/pthread_create.c:207
+  #11 0x000074a419d218c0 in __clone () at src/thread/x86_64/clone.s:22
   Backtrace stopped: frame did not save the PC
   
   Thread 1 (LWP 89 "sleeper-x86_64"):
   #0  __cp_end () at src/thread/x86_64/syscall_cp.s:29
-  #1  0x000071fb01732262 in __syscall_cp_c (nr=35, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
-  #2  0x000071fb01734fd4 in __clock_nanosleep (clk=0, flags=0, req=0x0, rem=0x0) at src/time/clock_nanosleep.c:33
-  #3  __clock_nanosleep (clk=clk@entry=0, flags=flags@entry=0, req=req@entry=0x7ffdf1923350, rem=rem@entry=0x0) at src/time/clock_nanosleep.c:8
-  #4  0x000071fb0173538a in nanosleep (req=req@entry=0x7ffdf1923350, rem=rem@entry=0x0) at src/time/nanosleep.c:6
-  #5  0x000062b6de8e835a in park_in_sleep () at sleeper.c:50
-  #6  0x000062b6de8e8405 in level_three (kind=kind@entry=1) at sleeper.c:71
-  #7  0x000062b6de8e8412 in level_two (kind=kind@entry=1) at sleeper.c:81
-  #8  0x000062b6de8e8422 in level_one (kind=kind@entry=1) at sleeper.c:86
-  #9  0x000062b6de8e8183 in main () at sleeper.c:129
-  __cp_begin..__cp_end: 0x71fb017348ca..0x71fb017348f3
+  #1  0x000074a419d1f262 in __syscall_cp_c (nr=35, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x000074a419d21fd4 in __clock_nanosleep (clk=0, flags=0, req=0x0, rem=0x0) at src/time/clock_nanosleep.c:33
+  #3  __clock_nanosleep (clk=clk@entry=0, flags=flags@entry=0, req=req@entry=0x7ffc2dbcc630, rem=rem@entry=0x0) at src/time/clock_nanosleep.c:8
+  #4  0x000074a419d2238a in nanosleep (req=req@entry=0x7ffc2dbcc630, rem=rem@entry=0x0) at src/time/nanosleep.c:6
+  #5  0x00005d391640535a in park_in_sleep () at sleeper.c:50
+  #6  0x00005d3916405405 in level_three (kind=kind@entry=1) at sleeper.c:71
+  #7  0x00005d3916405412 in level_two (kind=kind@entry=1) at sleeper.c:81
+  #8  0x00005d3916405422 in level_one (kind=kind@entry=1) at sleeper.c:86
+  #9  0x00005d3916405183 in main () at sleeper.c:129
+  __cp_begin..__cp_end: 0x74a419d218ca..0x74a419d218f3
   musl-syscall-cp: applied 0 times
     declined (i386:x86-64: musl covers __cp_begin, nothing to do): 29
 

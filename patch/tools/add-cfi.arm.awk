@@ -80,6 +80,7 @@ function rollback(   register) {
 {
   line_number = line_number + 1
 
+
   # clean the input up before doing anything else
   # delete comments
   gsub(/(@|\/\/).*/, "")
@@ -90,6 +91,12 @@ function rollback(   register) {
   gsub(/ *: */, ": ")
   gsub(/ $/, "")
   gsub(/^ /, "")
+
+  # A label may share the line with the instruction it marks - "1: mov fp,#0".
+  # The rules below match on this, so they do not have to care either way,
+  # while the line itself is still printed with its label intact.
+  insn = $0
+  sub(/^[a-zA-Z0-9_]+: /, "", insn)
 }
 
 # check for assembler directives which we care about
@@ -131,6 +138,7 @@ function rollback(   register) {
   # an instruction may follow on the same line, so continue processing
 }
 
+
 /^$/ { next }
 
 {
@@ -143,9 +151,9 @@ function rollback(   register) {
 # "sub sp,sp,#n" anywhere, so anything else touching sp is left alone on
 # purpose rather than guessed at.
 #
-/^(push \{|stmfd sp!,\{|stmdb sp!,\{)/ {
+insn ~ /^(push \{|stmfd sp!,\{|stmdb sp!,\{)/ {
   if (in_function) {
-    count = reglist($0)
+    count = reglist(insn)
     adjust_sp_offset(4 * count)
 
     # A pushed register keeps the caller's value if nothing has overwritten it
@@ -159,7 +167,7 @@ function rollback(   register) {
   }
 }
 
-/^(pop \{|ldmfd sp!,\{|ldmia sp!,\{)/ {
+insn ~ /^(pop \{|ldmfd sp!,\{|ldmia sp!,\{)/ {
   if (in_function) {
     # The pop belongs to one return path, but the instructions after it may
     # belong to another that never popped - __cp_cancel in syscall_cp.s and the
@@ -171,7 +179,7 @@ function rollback(   register) {
       snapshot()
       remembered = 1
     }
-    count = reglist($0)
+    count = reglist(insn)
     adjust_sp_offset(-4 * count)
     for (i = 1; i <= count; i++) {
       if (saved[regs[i]]) {
@@ -184,7 +192,7 @@ function rollback(   register) {
 
 # End of a path: a return, or a tail call that never comes back. Conditional
 # branches are deliberately not matched - they do not end anything.
-/^(bx lr|bx r14|mov pc,lr|b [a-zA-Z0-9_]+|b [0-9]+[bf])$/ {
+insn ~ /^(bx lr|bx r14|mov pc,lr|b [a-zA-Z0-9_]+|b [0-9]+[bf])$/ {
   if (in_function && remembered) {
     print ".cfi_restore_state"
     rollback()
@@ -201,18 +209,28 @@ function trashed(register,   n) {
     printf ".cfi_undefined r%d\n", n
   dirty[n] = 1
 }
-/^(mov|mvn|add|sub|rsb|and|orr|eor|bic|lsl|lsr|asr|mul|ldr) [a-z0-9]+,/ {
+insn ~ /^(mov|mvn|add|sub|rsb|and|orr|eor|bic|lsl|lsr|asr|mul|ldr) [a-z0-9]+,/ {
   if (in_function)
-    trashed(substr($0, index($0, " ")+1, index($0, ",")-index($0, " ")-1))
+    trashed(substr(insn, index(insn, " ")+1, index(insn, ",")-index(insn, " ")-1))
 }
 # ldm without a "!" writes registers without touching sp
-/^ldm(fd|ia|db|ea)? [a-z0-9]+,\{/ {
+insn ~ /^ldm(fd|ia|db|ea)? [a-z0-9]+,\{/ {
   if (in_function) {
-    count = reglist($0)
+    count = reglist(insn)
     for (i = 1; i <= count; i++)
       trashed("r" regs[i])
   }
 }
+
+# Zeroing the frame pointer is musl's own marker for the end of a thread stack -
+# clone.s does it in the child so frame-pointer unwinders stop there. Say the
+# same thing in CFI, otherwise a debugger keeps going into whatever the
+# registers happen to hold and reports __clone over and over.
+insn ~ /^mov fp,#?0$/ {
+  if (in_function)
+    print ".cfi_undefined r14"
+}
+
 
 END {
   if (in_function)

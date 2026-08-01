@@ -23,7 +23,7 @@ for arg in "$@"; do
 		*) LABELS="$LABELS $arg" ;;
 	esac
 done
-[ -z "$LABELS" ] && LABELS="armhf armv7 aarch64"
+[ -z "$LABELS" ] && LABELS="armhf armv7 aarch64 riscv64 ppc64le s390x loongarch64"
 
 DOCKER="docker"
 docker info >/dev/null 2>&1 || DOCKER="sudo docker"
