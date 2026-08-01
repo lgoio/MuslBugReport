@@ -9,9 +9,8 @@ Every blocking call — `poll`, `nanosleep`, `pthread_cond_timedwait` — goes
 through `__syscall_cp_asm`, so this is the frame every sleeping thread is
 parked in.
 
-What that costs depends on whether the debugger's fallback guess happens to be
-right. On 32-bit ARM it is not, and the application part of the stack is simply
-gone:
+What that costs differs by architecture. On 32-bit ARM the application part of
+the stack is simply gone:
 
 ```
 #0  __cp_end () at src/thread/arm/syscall_cp.s:25
@@ -21,10 +20,9 @@ Backtrace stopped: previous frame identical to this frame (corrupt stack?)
 ```
 
 That is measured on armhf and armv7. On aarch64, riscv64, ppc64le and s390x the
-same gdb recovers the chain today, because those stubs have no prologue and its
-fallback — CFA = `sp`, return address in the link register — is accidentally
-correct. Nothing guarantees that: it is a guess that currently pays off, and
-`eu-stack` on the same armv7 binary reports `no matching address range`.
+same gdb recovers the chain today — those stubs save nothing on the stack, and
+gdb copes. The tables are absent there all the same, and `eu-stack` on the
+armv7 binary reports `no matching address range` either way.
 
 ## Why
 
@@ -203,8 +201,8 @@ them and turns `ADD_CFI` on by itself. A build without `-g` is unaffected —
 `.text` comes out byte-identical to a stock build.
 
 *fixed* is reserved for where the symptom was measured and went away: 32-bit
-ARM. Elsewhere the tables were missing and are now present, which removes the
-reliance on a lucky guess — the visible backtrace was already correct there.
+ARM. Elsewhere the tables were missing and are now present; the visible
+backtrace was already correct there.
 
 The last column is about `clone.s`. musl zeroes the frame pointer in the child
 half on arm, aarch64 and loongarch64, and the generators turn that into CFI, so
@@ -302,9 +300,9 @@ You do not have to run it to see the outcome. This is what it prints:
       x86_64       covered by musl own generator - nothing missing
       armhf        run 1 loses the application frames, run 2 recovers
       armv7        them - this is where the gap is visible
-      aarch64      no FDE either, but gdb fallback guess happens to be
-      riscv64      right for these stubs, so run 1 already shows the
-      ppc64le      chain. The tables are still missing.
+      aarch64      no FDE either, but gdb copes with these stubs, so
+      riscv64      run 1 already shows the chain. The tables are
+      ppc64le      still missing.
       s390x
       loongarch64  FDE coverage only - the emulated gdb server ignores
                    the breakpoint, so no live backtrace is taken here
