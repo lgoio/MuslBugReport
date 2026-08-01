@@ -33,16 +33,14 @@ tools/add-cfi.x86_64.awk
 There is none for `arm` or `aarch64`. So `ADD_CFI=no`, the assembly is used
 unannotated, and no `.s` file carries `.cfi_*` directives by hand.
 
-This is unchanged in musl 1.2.6, the current release — which is what the
-measurement below was taken against.
-
-This is not a distribution problem. No build flag can add information that the
-source does not contain.
+That is still true in musl 1.2.6, the current release, which is what the
+measurement below was taken against. It is not a distribution problem either:
+no build flag can add information the source does not contain.
 
 ## What was measured
 
-Same musl version (1.2.6, the current release), same compiler, four architectures. The question is
-whether the unwind tables describe each function on the blocking-call path:
+Same musl version, same compiler, four architectures. The question is whether
+the unwind tables describe each function on the blocking-call path:
 
 | function           | x86_64 | armhf | armv7 | aarch64 |
 |--------------------|--------|-------|-------|---------|
@@ -71,9 +69,9 @@ even a backtrace that gets that far cannot stop properly — gdb repeats the las
 frame until it hits a limit:
 
 ```
-#11 __clone () at src/thread/arm/clone.s:23
-#12 __clone () at src/thread/arm/clone.s:23
-#13 __clone () at src/thread/arm/clone.s:23
+#11 __clone () at src/thread/arm/clone.s:24
+#12 __clone () at src/thread/arm/clone.s:24
+#13 __clone () at src/thread/arm/clone.s:24
 ...
 ```
 
