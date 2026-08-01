@@ -135,12 +135,33 @@ On the other architectures measured here `__clone` appears once per thread
 today, so the missing table costs nothing visible at that end. It is still
 missing.
 
-## What the gdb add-on shows
+## A stopgap you can use today
 
-`container/gdb_musl_unwinder.py` supplies the one frame the stub does not
-describe, and nothing else. It reads no debug information — the layout comes
-from the disassembly. On 32-bit ARM, where the frames are otherwise lost, the
-whole chain comes back with it loaded:
+If you are debugging a musl system as it stands — no patch, no rebuild —
+[`container/gdb_musl_unwinder.py`](container/gdb_musl_unwinder.py) supplies the
+one frame the stub does not describe, from inside gdb, on **32-bit ARM and
+aarch64**. It reads no debug information; the layout comes from the
+disassembly.
+
+```sh
+wget https://raw.githubusercontent.com/lgoio/MuslBugReport/refs/heads/main/container/gdb_musl_unwinder.py
+```
+
+```
+(gdb) attach PID                    # or target remote, or open a core
+(gdb) source gdb_musl_unwinder.py   # after attaching, not before: it
+                                    # resolves __cp_begin at load time
+(gdb) set backtrace limit 64        # __clone repeats without it
+(gdb) thread apply all -c bt        # -c, or it stops at the first bad thread
+(gdb) musl-unwinder-status          # how often it applied, and why not
+```
+
+The two comments matter. Sourced before the process is there, the symbols it
+needs do not exist yet — it falls back to a register heuristic on 32-bit ARM
+and declines entirely on aarch64. And without `-c`, `thread apply all` aborts
+at the first thread it cannot walk, which is usually the first one.
+
+On 32-bit ARM, where the frames are otherwise lost, the whole chain comes back:
 
 ```
 #4  __pthread_cond_timedwait (...) at src/thread/pthread_cond_timedwait.c:100
@@ -153,9 +174,12 @@ whole chain comes back with it loaded:
 ```
 
 Everything above the stub unwinds normally, because everything above it has
-unwind tables. That single frame is the whole difference — which is what
-identifies the gap, and why the fix belongs in the library rather than in a
-debugger script.
+unwind tables. That single frame is the whole difference.
+
+Its limits are why the real fix belongs in the library: only gdb sees it, so
+`eu-stack`, `libunwind`, `perf` and any program that unwinds itself in a crash
+handler do not; it hard-codes one frame layout per architecture; and somebody
+has to know it exists and load it.
 
 ## A fix
 
