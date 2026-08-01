@@ -61,7 +61,7 @@ architectures that have the code.
 | `aarch64` | aarch64 | **missing** | measured | [`tools/add-cfi.aarch64.awk`](patch/tools/add-cfi.aarch64.awk) |
 | `arm` | armhf, armv7 | **missing** | measured | [`tools/add-cfi.arm.awk`](patch/tools/add-cfi.arm.awk) |
 | `i386` | x86 | covered | from source | — (musl's own) |
-| `loongarch64` | loongarch64 | **missing** | from source | [`tools/add-cfi.loongarch64.awk`](patch/tools/add-cfi.loongarch64.awk) |
+| `loongarch64` | loongarch64 | **missing** | measured | [`tools/add-cfi.loongarch64.awk`](patch/tools/add-cfi.loongarch64.awk) |
 | `m68k` | — | **missing** | from source | not written |
 | `microblaze` | — | **missing** | from source | not written |
 | `mips` | — | **missing** | from source | not written |
