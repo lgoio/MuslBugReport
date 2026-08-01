@@ -5,10 +5,11 @@ address and the stub returns straight through x30 - so the default rules
 already describe it and .cfi_startproc/.cfi_endproc are enough to produce the
 FDE that is missing today.
 
-clone.s uses pre-indexed stp and post-indexed ldp, which is the only way the
-stack pointer moves in this port; unlike ARM's stm, stp stores its operands in
-the order they are written. The child zeroes the frame pointer, which the
-generator turns into .cfi_undefined for x30.
+Pre-indexed stp and post-indexed ldp are the only way the stack pointer moves
+in this port; unlike ARM's stm, stp stores its operands in the order they are
+written. clone.s saves to the new thread stack in x1 rather than to sp, and
+its child zeroes the frame pointer, which the generator turns into
+.cfi_undefined for x30.
 
 Verified by building musl with this, replacing the container's libc and taking
 a backtrace with plain gdb.
@@ -16,8 +17,8 @@ a backtrace with plain gdb.
 ---
 --- /dev/null
 +++ b/tools/add-cfi.aarch64.awk
-@@ -0,0 +1,196 @@
-+# Insert GAS CFI directives ("control frame information") into aarch64 asm
+@@ -0,0 +1,201 @@
++# Insert GAS CFI directives ("control frame information") into aarch64 asm input
 +
 +BEGIN {
 +  # don't put CFI data in the .eh_frame ELF section (which we don't keep)
@@ -71,9 +72,9 @@ a backtrace with plain gdb.
 +  gsub(/ $/, "")
 +  gsub(/^ /, "")
 +
-+  # A label may share the line with the instruction it marks - "1: mov fp,#0".
-+  # The rules below match on this, so they do not have to care either way,
-+  # while the line itself is still printed with its label intact.
++  # A label may share the line with the instruction it marks - clone.s has
++  # "1: mov x29, 0". The rules below match on insn instead of $0, so they see
++  # that instruction too, while the line is still printed with its label.
 +  insn = $0
 +  sub(/^[a-zA-Z0-9_]+: /, "", insn)
 +}
@@ -128,7 +129,8 @@ a backtrace with plain gdb.
 +# KEEPING UP WITH THE STACK POINTER
 +# sp is only ever adjusted by a pre-indexed stp or a post-indexed ldp in this
 +# source tree; there is no "sub sp,sp,#n" anywhere, so anything else touching
-+# sp is left alone on purpose rather than guessed at.
++# sp is left alone on purpose rather than guessed at. crti.s is what the store
++# rule is for; clone.s saves to the new thread stack in x1, not to sp.
 +#
 +# Unlike ARM's stm, stp stores its operands in the order they are written:
 +# "stp xA,xB,[sp,#-16]!" puts xA at the new sp and xB eight bytes above it.
@@ -157,9 +159,11 @@ a backtrace with plain gdb.
 +insn ~ /^ldp x[0-9]+,x[0-9]+,\[sp\],#?[0-9]+$/ {
 +  if (in_function) {
 +    # The load belongs to one return path, but the instructions after it may
-+    # belong to another that never stored anything - the child half of clone.s
-+    # is reached with the frame still in place. Bracketing the restore keeps
-+    # that path on the stored state instead of inheriting this one.
++    # belong to another that never loaded anything. Bracketing the restore
++    # keeps that path on the stored state instead of inheriting this one, and
++    # it needs no flow analysis, since a return ends a path. The only load from
++    # sp in this tree is the one in the child of clone.s, which runs after the
++    # end-of-stack marker below has already stopped the unwinder.
 +    if (!remembered) {
 +      print ".cfi_remember_state"
 +      snapshot()
@@ -199,10 +203,12 @@ a backtrace with plain gdb.
 +    trashed(substr(insn, index(insn, " ")+1, index(insn, ",")-index(insn, " ")-1))
 +}
 +
-+# Zeroing the frame pointer is musl's own marker for the end of a thread stack -
-+# clone.s does it in the child so frame-pointer unwinders stop there. Say the
-+# same thing in CFI, otherwise a debugger keeps going into whatever the
-+# registers happen to hold and reports __clone over and over.
++# END OF A THREAD STACK
++# Zeroing the frame pointer is musl's own marker for it: clone.s does that in
++# the child so frame-pointer unwinders stop there. Say the same in CFI by
++# marking the return address undefined - that is the register a debugger
++# follows - otherwise it keeps going into whatever the registers happen to
++# hold and reports __clone over and over.
 +insn ~ /^mov x29,#?0$/ {
 +  if (in_function)
 +    print ".cfi_undefined x30"

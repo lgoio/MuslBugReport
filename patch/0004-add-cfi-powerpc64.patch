@@ -3,7 +3,9 @@ Subject: [PATCH 4/7] powerpc64: add tools/add-cfi.powerpc64.awk
 Neither syscall_cp.s nor clone.s moves r1: clone.s builds the child's frame in
 r4, not in the stack pointer. The default rules therefore describe both, and
 the generator only has to open and close the frame. The "stdu 1,-n(1)" and
-"addi 1,1,n" forms are handled for the crt files that do move r1.
+"addi 1,1,n" forms are handled all the same, so that a file which does move r1
+is not silently mistracked; crti.s and crtn.s use them today but declare no
+.type,%function, so nothing is emitted there.
 
 clone.s carries no end-of-stack marker and needs none: __clone appears once
 per thread there today.
@@ -14,8 +16,14 @@ the resulting libc.so. No live backtrace was taken on this architecture.
 ---
 --- /dev/null
 +++ b/tools/add-cfi.powerpc64.awk
-@@ -0,0 +1,109 @@
-+# Insert GAS CFI directives ("control frame information") into powerpc64 asm
+@@ -0,0 +1,117 @@
++# Insert GAS CFI directives ("control frame information") into powerpc64 asm input
++#
++# The powerpc64 asm this runs over never moves the stack pointer inside a
++# function that declares .type,%function - syscall_cp.s and clone.s among them
++# - so the default rules already describe those frames and the generator only
++# has to open and close them. The two rules at the bottom are for the files
++# that do.
 +
 +BEGIN {
 +  # don't put CFI data in the .eh_frame ELF section (which we don't keep)
@@ -101,8 +109,10 @@ the resulting libc.so. No live backtrace was taken on this architecture.
 +
 +# KEEPING UP WITH THE STACK POINTER
 +# r1 is the stack pointer. "stdu 1,-n(1)" pushes a frame; "addi 1,1,n" pops it.
-+# Neither appears in syscall_cp.s or clone.s - those never move r1 - but crt
-+# code does, so the two forms are handled rather than silently mistracked.
++# Both appear in crti.s and crtn.s, which declare no .type,%function and so
++# emit nothing today - the rules are here so a file that does declare one is
++# not silently mistracked. clone.s writes the new thread stack through r4, not
++# r1, and is not matched.
 +#
 +insn ~ /^stdu 1,-[0-9]+\(1\)$/ {
 +  if (in_function) {

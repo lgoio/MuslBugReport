@@ -1,0 +1,9 @@
+syscall_cp.s has no prologue and returns through ra, so opening and closing
+the frame is enough. clone.s zeroes the frame pointer in the child, which the
+generator turns into .cfi_undefined for ra.
+
+Note this port spells the type directive .type name,@function rather than
+%function, like x86 and unlike the other ports touched here.
+
+Verified by building musl with this and reading the FDE coverage back out of
+the resulting libc.so. No live backtrace was taken on this architecture.

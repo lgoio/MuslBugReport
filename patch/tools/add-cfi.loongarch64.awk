@@ -1,4 +1,9 @@
-# Insert GAS CFI directives ("control frame information") into loongarch64 asm
+# Insert GAS CFI directives ("control frame information") into loongarch64 asm input
+#
+# The loongarch64 asm never moves the stack pointer - syscall_cp.s and clone.s
+# among them - so the default rules already describe those frames and the
+# generator only has to open and close them, plus mark the end of a thread
+# stack. The two rules in the middle are for the files that do.
 
 BEGIN {
   # don't put CFI data in the .eh_frame ELF section (which we don't keep)
@@ -83,7 +88,9 @@ function adjust_sp_offset(delta) {
 }
 
 # KEEPING UP WITH THE STACK POINTER
-# The only form this source tree uses is "addi.d $sp,$sp,-n".
+# "addi.d $sp,$sp,-n" is the only form that opens a frame here - the operand
+# carries the sign, and the CFA offset moves the other way. clone.s builds the
+# new thread stack in $a1 and is not matched.
 #
 insn ~ /^addi\.d \$sp,\$sp,-?[0-9]+$/ {
   if (in_function) {
@@ -107,10 +114,12 @@ insn ~ /^st\.[dw] \$[a-z0-9]+,\$sp,[0-9]+$/ {
   }
 }
 
-# Zeroing the frame pointer is musl's own marker for the end of a thread stack -
-# clone.s does it in the child so frame-pointer unwinders stop there. Say the
-# same thing in CFI, otherwise a debugger keeps going into whatever the
-# registers happen to hold and reports __clone over and over.
+# END OF A THREAD STACK
+# Zeroing the frame pointer is musl's own marker for it: clone.s does that in
+# the child so frame-pointer unwinders stop there. Say the same in CFI by
+# marking the return address undefined - that is the register a debugger
+# follows - otherwise it keeps going into whatever the registers happen to
+# hold and reports __clone over and over.
 insn ~ /^move \$fp,\$zero$/ {
   if (in_function)
     print ".cfi_undefined $ra"

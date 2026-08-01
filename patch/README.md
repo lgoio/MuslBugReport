@@ -28,6 +28,12 @@ The generated code does not change either. `.cfi_*` directives emit a debug
 section and no instructions, so `.text` comes out byte-identical to a stock
 build — measured over the whole library, not argued from the definition.
 
+The numbered `.patch` files are output, not source. `make-patches.sh` builds
+each one from the generator in [`tools/`](tools/) and the prose in
+[`rationale/`](rationale/), and `make-inline-mail.sh` assembles the send-ready
+message from the cover letter and those patches. Editing a `.patch` by hand
+accomplishes nothing — the next run overwrites it.
+
 ## Not the same thing as the gdb add-on
 
 [`../container/gdb_musl_unwinder.py`](../container/gdb_musl_unwinder.py) exists
@@ -69,22 +75,32 @@ return-address register.
 
 That matters on 32-bit ARM. Once the syscall frame is described, the backtrace
 reaches `__clone` and, without the termination, repeats it until the backtrace
-limit. On the architectures that carry no such marker — riscv64, powerpc64,
-s390x — the generators emit no termination, and measurement says none is needed:
-`__clone` appears exactly once per thread there today.
+limit. On the architectures that carry no such marker — riscv32, riscv64,
+powerpc64, s390x — the generators emit no termination, and measurement says none
+is needed: `__clone` appears exactly once per thread there today.
 
 Clearing the return-address register instead, the way musl's `_start` does, does
-not work here: all three call the thread function with a linking branch
-(`jalr`, `basr`, `bctrl`), which sets that register again immediately.
+not work here: they all call the thread function with a linking branch (`jalr`,
+`basr`, `bctrl`), which sets that register again immediately.
 
 ## Verifying it
 
 ```sh
+./patch/check-patches.sh       # seconds, on the host, no Docker
 ./patch/verify.sh              # stage 1, about a minute per architecture
 ./patch/verify.sh --full       # also builds musl and takes a real backtrace
 ```
 
-Needs the images from [`../run-on-host.sh`](../run-on-host.sh).
+`check-patches.sh` is the cheap one and runs anywhere. It checks that the patch
+files are in sync with their sources, that each applies with plain `patch -p1`
+and reproduces its generator byte for byte, that all seven apply as one stream —
+which is how they arrive in a mail — that every generator is valid awk, and that
+run over the real musl assembly each one wraps `__syscall_cp_asm` and `__clone`
+in a `.cfi_startproc`/`.cfi_endproc` pair. It fetches the musl sources itself,
+or uses `MUSL_DIR` if that points at an unpacked tree.
+
+`verify.sh` is the real thing and needs the images from
+[`../run-on-host.sh`](../run-on-host.sh).
 
 **Stage 1** assembles the two affected files twice — once straight through the
 compiler, which is what musl does today, and once through the generator first —

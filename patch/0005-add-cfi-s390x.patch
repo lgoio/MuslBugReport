@@ -2,7 +2,9 @@ Subject: [PATCH 5/7] s390x: add tools/add-cfi.s390x.awk
 
 The stack pointer does not move in either file. syscall_cp.s saves r6 and r7
 into the caller-provided register save area, which sits above the CFA, hence
-the positive rel_offset. "aghi %r15,-n" is handled for the crt files.
+the positive rel_offset. "aghi %r15,-n" is handled all the same, so that a
+file which does open a frame is not silently mistracked; crti.s uses it today
+but declares no .type,%function, so nothing is emitted there.
 
 clone.s carries no end-of-stack marker and needs none: __clone appears once
 per thread there today.
@@ -13,8 +15,8 @@ the resulting libc.so. No live backtrace was taken on this architecture.
 ---
 --- /dev/null
 +++ b/tools/add-cfi.s390x.awk
-@@ -0,0 +1,116 @@
-+# Insert GAS CFI directives ("control frame information") into s390x asm
+@@ -0,0 +1,122 @@
++# Insert GAS CFI directives ("control frame information") into s390x asm input
 +
 +BEGIN {
 +  # don't put CFI data in the .eh_frame ELF section (which we don't keep)
@@ -99,7 +101,11 @@ the resulting libc.so. No live backtrace was taken on this architecture.
 +}
 +
 +# KEEPING UP WITH THE STACK POINTER
-+# %r15 is the stack pointer and "aghi %r15,-n" is the only form used here.
++# %r15 is the stack pointer and "aghi %r15,-n" is the only form that opens a
++# frame here. It appears in crti.s, which declares no .type,%function and so
++# emits nothing today - the rule is here so a file that does declare one is
++# not silently mistracked. clone.s builds the new thread stack in %r3 and is
++# not matched.
 +#
 +insn ~ /^aghi %r15,-[0-9]+$/ {
 +  if (in_function) {
@@ -111,7 +117,9 @@ the resulting libc.so. No live backtrace was taken on this architecture.
 +
 +# TRACKING REGISTER VALUES FROM THE PREVIOUS STACK FRAME
 +# The caller provides the register save area, so a "stg %rN,off(%r15)" stores
-+# above the CFA rather than below it - hence the positive offset.
++# above the CFA rather than below it - hence the positive offset. This is the
++# rule that carries the frame here: syscall_cp.s saves %r6 and %r7 that way,
++# clone.s saves %r6.
 +#
 +insn ~ /^stg %r[0-9]+,[0-9]+\(%r15\)$/ {
 +  if (in_function) {

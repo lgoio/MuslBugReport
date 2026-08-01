@@ -1,0 +1,12 @@
+Neither syscall_cp.s nor clone.s moves r1: clone.s builds the child's frame in
+r4, not in the stack pointer. The default rules therefore describe both, and
+the generator only has to open and close the frame. The "stdu 1,-n(1)" and
+"addi 1,1,n" forms are handled all the same, so that a file which does move r1
+is not silently mistracked; crti.s and crtn.s use them today but declare no
+.type,%function, so nothing is emitted there.
+
+clone.s carries no end-of-stack marker and needs none: __clone appears once
+per thread there today.
+
+Verified by building musl with this and reading the FDE coverage back out of
+the resulting libc.so. No live backtrace was taken on this architecture.

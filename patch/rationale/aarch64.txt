@@ -1,0 +1,13 @@
+syscall_cp.s has no prologue at all - __syscall_cp_asm and __cp_begin share an
+address and the stub returns straight through x30 - so the default rules
+already describe it and .cfi_startproc/.cfi_endproc are enough to produce the
+FDE that is missing today.
+
+Pre-indexed stp and post-indexed ldp are the only way the stack pointer moves
+in this port; unlike ARM's stm, stp stores its operands in the order they are
+written. clone.s saves to the new thread stack in x1 rather than to sp, and
+its child zeroes the frame pointer, which the generator turns into
+.cfi_undefined for x30.
+
+Verified by building musl with this, replacing the container's libc and taking
+a backtrace with plain gdb.

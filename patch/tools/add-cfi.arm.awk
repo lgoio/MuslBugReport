@@ -1,4 +1,4 @@
-# Insert GAS CFI directives ("control frame information") into 32-bit ARM asm
+# Insert GAS CFI directives ("control frame information") into 32-bit ARM asm input
 
 BEGIN {
   # don't put CFI data in the .eh_frame ELF section (which we don't keep)
@@ -92,9 +92,9 @@ function rollback(   register) {
   gsub(/ $/, "")
   gsub(/^ /, "")
 
-  # A label may share the line with the instruction it marks - "1: mov fp,#0".
-  # The rules below match on this, so they do not have to care either way,
-  # while the line itself is still printed with its label intact.
+  # A label may share the line with the instruction it marks - clone.s has
+  # "1: mov fp,#0". The rules below match on insn instead of $0, so they see
+  # that instruction too, while the line is still printed with its label.
   insn = $0
   sub(/^[a-zA-Z0-9_]+: /, "", insn)
 }
@@ -222,10 +222,12 @@ insn ~ /^ldm(fd|ia|db|ea)? [a-z0-9]+,\{/ {
   }
 }
 
-# Zeroing the frame pointer is musl's own marker for the end of a thread stack -
-# clone.s does it in the child so frame-pointer unwinders stop there. Say the
-# same thing in CFI, otherwise a debugger keeps going into whatever the
-# registers happen to hold and reports __clone over and over.
+# END OF A THREAD STACK
+# Zeroing the frame pointer is musl's own marker for it: clone.s does that in
+# the child so frame-pointer unwinders stop there. Say the same in CFI by
+# marking the return address undefined - that is the register a debugger
+# follows - otherwise it keeps going into whatever the registers happen to
+# hold and reports __clone over and over.
 insn ~ /^mov fp,#?0$/ {
   if (in_function)
     print ".cfi_undefined r14"

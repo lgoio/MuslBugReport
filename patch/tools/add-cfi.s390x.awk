@@ -1,4 +1,4 @@
-# Insert GAS CFI directives ("control frame information") into s390x asm
+# Insert GAS CFI directives ("control frame information") into s390x asm input
 
 BEGIN {
   # don't put CFI data in the .eh_frame ELF section (which we don't keep)
@@ -83,7 +83,11 @@ function adjust_sp_offset(delta) {
 }
 
 # KEEPING UP WITH THE STACK POINTER
-# %r15 is the stack pointer and "aghi %r15,-n" is the only form used here.
+# %r15 is the stack pointer and "aghi %r15,-n" is the only form that opens a
+# frame here. It appears in crti.s, which declares no .type,%function and so
+# emits nothing today - the rule is here so a file that does declare one is
+# not silently mistracked. clone.s builds the new thread stack in %r3 and is
+# not matched.
 #
 insn ~ /^aghi %r15,-[0-9]+$/ {
   if (in_function) {
@@ -95,7 +99,9 @@ insn ~ /^aghi %r15,-[0-9]+$/ {
 
 # TRACKING REGISTER VALUES FROM THE PREVIOUS STACK FRAME
 # The caller provides the register save area, so a "stg %rN,off(%r15)" stores
-# above the CFA rather than below it - hence the positive offset.
+# above the CFA rather than below it - hence the positive offset. This is the
+# rule that carries the frame here: syscall_cp.s saves %r6 and %r7 that way,
+# clone.s saves %r6.
 #
 insn ~ /^stg %r[0-9]+,[0-9]+\(%r15\)$/ {
   if (in_function) {

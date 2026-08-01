@@ -1,0 +1,12 @@
+riscv32 differs from riscv64 in these two files only in the load and store
+widths, and neither moves the stack pointer, so the rules are the same: open
+and close the frame and let the default rules describe it. The generator is
+the riscv64 one with the store form narrowed to sw, which is the only width
+this port has.
+
+clone.s carries no end-of-stack marker and needs none.
+
+Verified by assembling both files with and without the generator using
+-march=rv32i -mabi=ilp32 in the riscv64 Alpine container, and reading the FDE
+coverage back out. Alpine has no riscv32 image, so musl was not built as a
+whole for this one.

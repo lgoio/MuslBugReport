@@ -1,0 +1,11 @@
+The stack pointer does not move in either file. syscall_cp.s saves r6 and r7
+into the caller-provided register save area, which sits above the CFA, hence
+the positive rel_offset. "aghi %r15,-n" is handled all the same, so that a
+file which does open a frame is not silently mistracked; crti.s uses it today
+but declares no .type,%function, so nothing is emitted there.
+
+clone.s carries no end-of-stack marker and needs none: __clone appears once
+per thread there today.
+
+Verified by building musl with this and reading the FDE coverage back out of
+the resulting libc.so. No live backtrace was taken on this architecture.

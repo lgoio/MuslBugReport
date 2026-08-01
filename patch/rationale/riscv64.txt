@@ -1,0 +1,13 @@
+Neither syscall_cp.s nor clone.s moves the stack pointer, so the default rules
+describe both and the generator only has to open and close the frame. The
+"addi sp,sp,-n" form and register stores to the stack are handled anyway, for
+the files that do use them and so the generator does not silently mistrack a
+future change.
+
+clone.s carries no end-of-stack marker and needs none: __clone appears once
+per thread there today. Clearing the return-address register the way _start
+does would not work here, because the child calls the thread function with
+jalr, which sets it again.
+
+Verified by building musl with this and reading the FDE coverage back out of
+the resulting libc.so. No live backtrace was taken on this architecture.

@@ -1,4 +1,9 @@
-# Insert GAS CFI directives ("control frame information") into riscv64 asm
+# Insert GAS CFI directives ("control frame information") into riscv64 asm input
+#
+# Most of the riscv64 asm never moves the stack pointer - syscall_cp.s and
+# clone.s among them - so the default rules already describe those frames and
+# the generator only has to open and close them. The two rules at the bottom
+# are for the files that do, ldso/riscv64/tlsdesc.s today.
 
 BEGIN {
   # don't put CFI data in the .eh_frame ELF section (which we don't keep)
@@ -83,7 +88,9 @@ function adjust_sp_offset(delta) {
 }
 
 # KEEPING UP WITH THE STACK POINTER
-# The only form this source tree uses is "add sp,sp,-n" / "addi sp,sp,n".
+# "add sp,sp,-n" opens a frame and "add sp,sp,n" closes it again - the operand
+# carries the sign, and the CFA offset moves the other way. Nothing else in
+# this source tree writes sp.
 #
 insn ~ /^addi? sp,sp,-?[0-9]+$/ {
   if (in_function) {
@@ -94,7 +101,10 @@ insn ~ /^addi? sp,sp,-?[0-9]+$/ {
 }
 
 # TRACKING REGISTER VALUES FROM THE PREVIOUS STACK FRAME
-# "sd ra,n(sp)" and friends put a register from the caller on the stack.
+# "sd ra,n(sp)" and friends put a register from the caller on the stack. A
+# store written without an offset - "sd t1,(sp)" - is passed over rather than
+# read as 0: leaving a register untracked costs a value in the debugger, while
+# guessing at the address would print the wrong one.
 #
 insn ~ /^(sd|sw) [a-z0-9]+,[0-9]+\(sp\)$/ {
   if (in_function) {

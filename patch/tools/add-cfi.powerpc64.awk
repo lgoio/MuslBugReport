@@ -1,4 +1,10 @@
-# Insert GAS CFI directives ("control frame information") into powerpc64 asm
+# Insert GAS CFI directives ("control frame information") into powerpc64 asm input
+#
+# The powerpc64 asm this runs over never moves the stack pointer inside a
+# function that declares .type,%function - syscall_cp.s and clone.s among them
+# - so the default rules already describe those frames and the generator only
+# has to open and close them. The two rules at the bottom are for the files
+# that do.
 
 BEGIN {
   # don't put CFI data in the .eh_frame ELF section (which we don't keep)
@@ -84,8 +90,10 @@ function adjust_sp_offset(delta) {
 
 # KEEPING UP WITH THE STACK POINTER
 # r1 is the stack pointer. "stdu 1,-n(1)" pushes a frame; "addi 1,1,n" pops it.
-# Neither appears in syscall_cp.s or clone.s - those never move r1 - but crt
-# code does, so the two forms are handled rather than silently mistracked.
+# Both appear in crti.s and crtn.s, which declare no .type,%function and so
+# emit nothing today - the rules are here so a file that does declare one is
+# not silently mistracked. clone.s writes the new thread stack through r4, not
+# r1, and is not matched.
 #
 insn ~ /^stdu 1,-[0-9]+\(1\)$/ {
   if (in_function) {

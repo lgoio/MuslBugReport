@@ -1,0 +1,16 @@
+The stub pushes four registers, so the frame needs an adjusted CFA and a
+rel_offset per saved register. __cp_end pops them again while __cp_cancel is
+branched to with them still saved; bracketing the pop with
+.cfi_remember_state/.cfi_restore_state and restoring at the return keeps that
+path on the pushed state without any flow analysis, since a return ends a
+path.
+
+clone.s zeroes the frame pointer in the child. That is already an end-of-stack
+marker for frame-pointer unwinders, so the generator says the same thing in
+CFI with .cfi_undefined for the return-address register; otherwise __clone
+repeats until the backtrace limit.
+
+This is the architecture where the missing tables are visible: gdb's fallback
+assumes CFA = sp, which is wrong here, and the application part of the stack
+is lost. Verified by building musl with this, replacing the container's libc
+and taking a backtrace with plain gdb.
