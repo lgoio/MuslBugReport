@@ -4,8 +4,8 @@ The stack pointer does not move in either file. syscall_cp.s saves r6 and r7
 into the caller-provided register save area, which sits above the CFA, hence
 the positive rel_offset. "aghi %r15,-n" is handled for the crt files.
 
-clone.s carries no end-of-stack marker and needs none: __clone appears once per
-thread there today.
+clone.s carries no end-of-stack marker and needs none: __clone appears once
+per thread there today.
 
 Verified by building musl with this and reading the FDE coverage back out of
 the resulting libc.so. No live backtrace was taken on this architecture.

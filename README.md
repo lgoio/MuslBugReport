@@ -178,7 +178,9 @@ Details and how to verify: [`patch/README.md`](patch/README.md).
 
 ## Running it
 
-Debian or Ubuntu with Docker. Everything else is checked and offered:
+Debian or Ubuntu with Docker and qemu-user. Everything else is checked and
+offered — the script installs what is missing, fetches the static qemu
+binaries the images carry, and skips any architecture it cannot run:
 
 ```sh
 ./run-on-host.sh

@@ -1,7 +1,7 @@
 Subject: [PATCH 6/6] loongarch64: add tools/add-cfi.loongarch64.awk
 
-syscall_cp.s has no prologue and returns through ra, so opening and closing the
-frame is enough. clone.s zeroes the frame pointer in the child, which the
+syscall_cp.s has no prologue and returns through ra, so opening and closing
+the frame is enough. clone.s zeroes the frame pointer in the child, which the
 generator turns into .cfi_undefined for ra.
 
 Note this port spells the type directive .type name,@function rather than
