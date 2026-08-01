@@ -135,12 +135,12 @@ On the other architectures measured here `__clone` appears once per thread
 today, so the missing table costs nothing visible at that end. It is still
 missing.
 
-## A stopgap you can use today
+## Workaround for existing systems
 
-If you are debugging a musl system as it stands — no patch, no rebuild —
+On an existing system — no patch, no rebuild —
 [`container/gdb_musl_unwinder.py`](container/gdb_musl_unwinder.py) supplies the
-one frame the stub does not describe, from inside gdb, on **32-bit ARM and
-aarch64**. It reads no debug information; the layout comes from the
+one frame the stub does not describe, from inside gdb, on **ARMv7, ARMv6/ARMhf
+and aarch64/ARM64**. It reads no debug information; the layout comes from the
 disassembly.
 
 ```sh
