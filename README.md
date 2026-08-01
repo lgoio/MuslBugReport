@@ -151,7 +151,7 @@ wget https://raw.githubusercontent.com/lgoio/MuslBugReport/refs/heads/main/conta
 (gdb) attach PID                    # or target remote, or open a core
 (gdb) source gdb_musl_unwinder.py   # after attaching, not before: it
                                     # resolves __cp_begin at load time
-(gdb) set backtrace limit 64        # __clone repeats without it
+(gdb) set backtrace limit 30        # __clone repeats without it
 (gdb) thread apply all -c bt        # -c, or it stops at the first bad thread
 (gdb) musl-unwinder-status          # how often it applied, and why not
 ```

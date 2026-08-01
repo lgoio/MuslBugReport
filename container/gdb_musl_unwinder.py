@@ -47,9 +47,8 @@
 #
 # DETECTION
 # Primarily by address: pc inside [__cp_begin, __cp_end). Those are static
-# symbols inside musl, so an expression like &__cp_begin does not resolve from
-# the application context ("No symbol __cp_begin in current context") - the
-# minimal symbol table has to be asked directly. Requires musl-dbg.
+# symbols inside musl, so plain &__cp_begin does not resolve from the
+# application context; taking the address explicitly does. Requires musl-dbg.
 #
 # On 32-bit ARM there is a fallback that needs no symbols at all: r12 holds the
 # stack pointer from before the push and survives the syscall, because Linux
@@ -57,12 +56,24 @@
 # is the address range or nothing.
 #
 # USAGE
+#     (gdb) attach PID                    # or target remote, or open a core
 #     (gdb) source gdb_musl_unwinder.py
+#     (gdb) set backtrace limit 30
 #     (gdb) thread apply all -c bt
 #     (gdb) musl-unwinder-status
 #
-# The -c ("continue on error") matters: without it "thread apply all" aborts at
-# the first failing thread.
+# Source it AFTER the process is there. The __cp_begin/__cp_end addresses are
+# resolved at load time, and musl is not mapped before that; sourced too early
+# it falls back to a register heuristic on 32-bit ARM and declines outright on
+# aarch64, without anything looking like an error.
+#
+# The backtrace limit is not optional. Once this supplies the missing frame the
+# walk reaches __clone, which has no unwind information either and no marker
+# for the end of a thread stack, so gdb keeps producing the same frame at full
+# CPU until something stops it.
+#
+# The -c ("continue on error") matters too: without it "thread apply all" aborts
+# at the first failing thread, which is usually the first one.
 
 import re
 import struct
