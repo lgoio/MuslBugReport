@@ -64,7 +64,7 @@
 #
 # Source it AFTER the process is there. The __cp_begin/__cp_end addresses are
 # resolved at load time, and musl is not mapped before that; sourced too early
-# it falls back to a register heuristic on 32-bit ARM and declines outright on
+# it falls back to guessing from a register on 32-bit ARM and declines on
 # aarch64, without anything looking like an error.
 #
 # The backtrace limit is not optional. Once this supplies the missing frame the

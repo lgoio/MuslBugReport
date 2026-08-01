@@ -157,7 +157,7 @@ wget https://raw.githubusercontent.com/lgoio/MuslBugReport/refs/heads/main/conta
 ```
 
 The two comments matter. Sourced before the process is there, the symbols it
-needs do not exist yet — it falls back to a register heuristic on 32-bit ARM
+needs do not exist yet — it falls back to guessing from a register on 32-bit ARM
 and declines entirely on aarch64. And without `-c`, `thread apply all` aborts
 at the first thread it cannot walk, which is usually the first one.
 
