@@ -1,4 +1,4 @@
-Subject: [PATCH 5/6] s390x: add tools/add-cfi.s390x.awk
+Subject: [PATCH 5/7] s390x: add tools/add-cfi.s390x.awk
 
 The stack pointer does not move in either file. syscall_cp.s saves r6 and r7
 into the caller-provided register save area, which sits above the CFA, hence

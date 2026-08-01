@@ -1,4 +1,4 @@
-Subject: [PATCH 1/6] arm: add tools/add-cfi.arm.awk
+Subject: [PATCH 1/7] arm: add tools/add-cfi.arm.awk
 
 The stub pushes four registers, so the frame needs an adjusted CFA and a
 rel_offset per saved register. __cp_end pops them again while __cp_cancel is

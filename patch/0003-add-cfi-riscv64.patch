@@ -1,4 +1,4 @@
-Subject: [PATCH 3/6] riscv64: add tools/add-cfi.riscv64.awk
+Subject: [PATCH 3/7] riscv64: add tools/add-cfi.riscv64.awk
 
 Neither syscall_cp.s nor clone.s moves the stack pointer, so the default rules
 describe both and the generator only has to open and close the frame. The

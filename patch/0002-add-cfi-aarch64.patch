@@ -1,4 +1,4 @@
-Subject: [PATCH 2/6] aarch64: add tools/add-cfi.aarch64.awk
+Subject: [PATCH 2/7] aarch64: add tools/add-cfi.aarch64.awk
 
 syscall_cp.s has no prologue at all - __syscall_cp_asm and __cp_begin share an
 address and the stub returns straight through x30 - so the default rules

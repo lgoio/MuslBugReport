@@ -70,17 +70,17 @@ architectures that have the code.
 | `or1k` | — | **missing** | from source | not written |
 | `powerpc` | — | **missing** | from source | not written |
 | `powerpc64` | ppc64le | **missing** | measured | [`tools/add-cfi.powerpc64.awk`](patch/tools/add-cfi.powerpc64.awk) |
-| `riscv32` | — | **missing** | from source | not written |
+| `riscv32` | — | **missing** | assembled | [`tools/add-cfi.riscv32.awk`](patch/tools/add-cfi.riscv32.awk) |
 | `riscv64` | riscv64 | **missing** | measured | [`tools/add-cfi.riscv64.awk`](patch/tools/add-cfi.riscv64.awk) |
 | `s390x` | s390x | **missing** | measured | [`tools/add-cfi.s390x.awk`](patch/tools/add-cfi.s390x.awk) |
 | `sh` | — | **missing** | from source | not written |
 | `x32` | — | **missing** | from source | not written |
 | `x86_64` | x86_64 | covered | measured | — (musl's own) |
 
-*measured* means read out of the ELF files Alpine ships for that architecture;
-*from source* means the musl tree has the same two assembly files with no
-`.cfi_*` in them and no generator. Alpine does not package the rest, so they
-could not be measured here.
+*measured* means read out of the ELF files Alpine ships for that architecture.
+*assembled* means Alpine ships none, so the two files were assembled here and
+the coverage read out of the objects. *from source* means only that the tree
+has the same two assembly files with no `.cfi_*` in them and no generator.
 
 Full detail: [`results/architectures.txt`](results/architectures.txt).
 
@@ -89,15 +89,15 @@ Full detail: [`results/architectures.txt`](results/architectures.txt).
 Same musl version, same compiler. The question is whether the unwind tables
 describe each function on the blocking-call path:
 
-| function           | x86_64 | armhf | armv7 | aarch64 | riscv64 | ppc64le | s390x |
-|--------------------|--------|-------|-------|---------|---------|---------|-------|
-| `__syscall_cp_asm` | yes    | no    | no    | no      | no      | no      | no    |
-| `__cp_begin`       | yes    | no    | no    | no      | no      | no      | no    |
-| `__cp_end`         | yes    | no    | no    | no      | no      | no      | no    |
-| `__clone`          | yes    | no    | no    | no      | no      | no      | no    |
-| `__syscall_cp_c`   | yes    | yes   | yes   | yes     | yes     | yes     | yes   |
-| `nanosleep`        | yes    | yes   | yes   | yes     | yes     | yes     | yes   |
-| `poll`             | yes    | yes   | yes   | yes     | yes     | yes     | yes   |
+| function | x86_64 | armhf | armv7 | aarch64 | riscv64 | ppc64le | s390x | loong64 |
+|---|---|---|---|---|---|---|---|---|
+| `__syscall_cp_asm` | yes | no | no | no | no | no | no | no |
+| `__cp_begin` | yes | no | no | no | no | no | no | no |
+| `__cp_end` | yes | no | no | no | no | no | no | no |
+| `__clone` | yes | no | no | no | no | no | no | no |
+| `__syscall_cp_c` | yes | yes | yes | yes | yes | yes | yes | yes |
+| `nanosleep` | yes | yes | yes | yes | yes | yes | yes | yes |
+| `poll` | yes | yes | yes | yes | yes | yes | yes | yes |
 
 The last three are C. The compiler wrote their tables itself — which is exactly
 why only the assembly is missing.
@@ -159,8 +159,8 @@ debugger script.
 
 ## A fix
 
-[`patch/`](patch/) writes the missing generators — six of them, one for every
-affected architecture Alpine builds:
+[`patch/`](patch/) writes the missing generators — seven of them: one for
+every affected architecture Alpine builds, plus riscv32:
 
 | architecture | Alpine | generator | sleeping threads | `__clone` stops repeating |
 |---|---|---|---|---|
@@ -170,6 +170,7 @@ affected architecture Alpine builds:
 | `riscv64` | riscv64 | yes | tables added | not needed |
 | `powerpc64` | ppc64le | yes | tables added | not needed |
 | `s390x` | s390x | yes | tables added | not needed |
+| `riscv32` | not packaged | yes | tables added ‡ | not needed |
 | the other ten | not packaged | not written | — | — |
 
 **No source file is edited.** The generators are new files; `configure` finds
@@ -183,8 +184,13 @@ reliance on a lucky guess — the visible backtrace was already correct there.
 
 The last column is about `clone.s`. musl zeroes the frame pointer in the child
 half on arm, aarch64 and loongarch64, and the generators turn that into CFI, so
-`__clone` stops repeating. The other three carry no such marker and need none:
+`__clone` stops repeating. The others carry no such marker and need none:
 `__clone` already appears once per thread there.
+
+‡ Alpine packages no riscv32, so only the two affected files were assembled
+with `-march=rv32i -mabi=ilp32` and the coverage read back, rather than
+building musl as a whole. In these files riscv32 differs from riscv64 only in
+load and store widths.
 
 Details and how to verify: [`patch/README.md`](patch/README.md).
 

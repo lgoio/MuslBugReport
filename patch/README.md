@@ -6,9 +6,9 @@ it at build time and comes out annotated. That file exists for `i386` and
 `x86_64`. For the other sixteen architectures it does not, which is the whole
 bug — see [`../results/architectures.txt`](../results/architectures.txt).
 
-So the fix is to write the missing ones. [`tools/`](tools/) has six — every
+So the fix is to write the missing ones. [`tools/`](tools/) has seven — every
 affected architecture Alpine builds, and therefore every one this reproducer can
-actually run:
+actually run, plus riscv32:
 
 ```
 tools/add-cfi.arm.awk
@@ -17,6 +17,7 @@ tools/add-cfi.riscv64.awk
 tools/add-cfi.powerpc64.awk
 tools/add-cfi.s390x.awk
 tools/add-cfi.loongarch64.awk
+tools/add-cfi.riscv32.awk
 ```
 
 **No source file is edited.** Drop them into an untouched musl tree and

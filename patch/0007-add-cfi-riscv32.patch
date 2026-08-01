@@ -1,21 +1,21 @@
-Subject: [PATCH 4/7] powerpc64: add tools/add-cfi.powerpc64.awk
+Subject: [PATCH 7/7] riscv32: add tools/add-cfi.riscv32.awk
 
-Neither syscall_cp.s nor clone.s moves r1: clone.s builds the child's frame in
-r4, not in the stack pointer. The default rules therefore describe both, and
-the generator only has to open and close the frame. The "stdu 1,-n(1)" and
-"addi 1,1,n" forms are handled for the crt files that do move r1.
+riscv32 differs from riscv64 in these two files only in the load and store
+widths, and neither moves the stack pointer, so the rules are the same: open
+and close the frame and let the default rules describe it. The store form is
+matched for both widths already.
 
-clone.s carries no end-of-stack marker and needs none: __clone appears once
-per thread there today.
+clone.s carries no end-of-stack marker and needs none.
 
-Verified by building musl with this and reading the FDE coverage back out of
-the resulting libc.so. No live backtrace was taken on this architecture.
+Verified by assembling both files with and without the generator using
+-march=rv32i -mabi=ilp32, and reading the FDE coverage back out. Alpine
+packages no riscv32, so musl was not built as a whole for this one.
 
 ---
 --- /dev/null
-+++ b/tools/add-cfi.powerpc64.awk
-@@ -0,0 +1,109 @@
-+# Insert GAS CFI directives ("control frame information") into powerpc64 asm
++++ b/tools/add-cfi.riscv32.awk
+@@ -0,0 +1,115 @@
++# Insert GAS CFI directives ("control frame information") into riscv32 asm
 +
 +BEGIN {
 +  # don't put CFI data in the .eh_frame ELF section (which we don't keep)
@@ -100,22 +100,28 @@ the resulting libc.so. No live backtrace was taken on this architecture.
 +}
 +
 +# KEEPING UP WITH THE STACK POINTER
-+# r1 is the stack pointer. "stdu 1,-n(1)" pushes a frame; "addi 1,1,n" pops it.
-+# Neither appears in syscall_cp.s or clone.s - those never move r1 - but crt
-+# code does, so the two forms are handled rather than silently mistracked.
++# The only form this source tree uses is "add sp,sp,-n" / "addi sp,sp,n".
 +#
-+insn ~ /^stdu 1,-[0-9]+\(1\)$/ {
++insn ~ /^addi? sp,sp,-?[0-9]+$/ {
 +  if (in_function) {
 +    n = insn
-+    sub(/^stdu 1,-/, "", n); sub(/\(1\)$/, "", n)
-+    adjust_sp_offset(n + 0)
++    sub(/^addi? sp,sp,/, "", n)
++    adjust_sp_offset(-(n + 0))
 +  }
 +}
-+insn ~ /^addi 1,1,[0-9]+$/ {
++
++# TRACKING REGISTER VALUES FROM THE PREVIOUS STACK FRAME
++# "sw ra,n(sp)" and friends put a register from the caller on the stack.
++#
++insn ~ /^(sd|sw) [a-z0-9]+,[0-9]+\(sp\)$/ {
 +  if (in_function) {
-+    n = insn
-+    sub(/^addi 1,1,/, "", n)
-+    adjust_sp_offset(-(n + 0))
++    register = substr(insn, index(insn, " ")+1, index(insn, ",")-index(insn, " ")-1)
++    offset = substr(insn, index(insn, ",")+1)
++    sub(/\(sp\)$/, "", offset)
++    if (!saved[register]) {
++      printf ".cfi_rel_offset %s,%d\n", register, offset+0
++      saved[register] = 1
++    }
 +  }
 +}
 +
