@@ -1,0 +1,178 @@
+# Insert GAS CFI directives ("control frame information") into aarch64 asm
+
+BEGIN {
+  # don't put CFI data in the .eh_frame ELF section (which we don't keep)
+  print ".cfi_sections .debug_frame"
+
+  # only emit CFI directives inside a function
+  in_function = 0
+
+  # emit .loc directives with line numbers from original source
+  printf ".file 1 \"%s\"\n", ARGV[1]
+  line_number = 0
+
+  # set between a stack restore and the return that follows it, so the two
+  # halves of .cfi_remember_state/.cfi_restore_state always pair up
+  remembered = 0
+}
+
+function adjust_sp_offset(delta) {
+  if (in_function)
+    printf ".cfi_adjust_cfa_offset %d\n", delta
+}
+
+# The generator's own idea of which registers still hold the caller's value has
+# to follow .cfi_remember_state/.cfi_restore_state, or the state it assumes and
+# the state the assembler assumes drift apart after the first return path.
+function snapshot(   register) {
+  for (register in saved_at_remember) delete saved_at_remember[register]
+  for (register in dirty_at_remember) delete dirty_at_remember[register]
+  for (register in saved) saved_at_remember[register] = 1
+  for (register in dirty) dirty_at_remember[register] = 1
+}
+function rollback(   register) {
+  for (register in saved) delete saved[register]
+  for (register in dirty) delete dirty[register]
+  for (register in saved_at_remember) saved[register] = 1
+  for (register in dirty_at_remember) dirty[register] = 1
+}
+
+{
+  line_number = line_number + 1
+
+  # clean the input up before doing anything else
+  # delete comments
+  gsub(/(\/\/).*/, "")
+
+  # canonicalize whitespace
+  gsub(/[ \t]+/, " ") # mawk doesn't understand \s
+  gsub(/ *, */, ",")
+  gsub(/ *: */, ": ")
+  gsub(/ $/, "")
+  gsub(/^ /, "")
+}
+
+# check for assembler directives which we care about
+/^\.(section|data|text)/ {
+  # a .cfi_startproc/.cfi_endproc pair should be within the same section
+  # otherwise, clang will choke when generating ELF output
+  if (in_function) {
+    print ".cfi_endproc"
+    in_function = 0
+    remembered = 0
+  }
+}
+/^\.type [a-zA-Z0-9_]+,%function/ {
+  functions[substr($2, 1, length($2)-10)] = 1
+}
+# not interested in assembler directives beyond this, just pass them through
+/^\./ {
+  print
+  next
+}
+
+/^[a-zA-Z0-9_]+:/ {
+  label = substr($1, 1, length($1)-1) # drop trailing :
+
+  if (functions[label]) {
+    if (in_function)
+      print ".cfi_endproc"
+
+    in_function = 1
+    remembered = 0
+    print ".cfi_startproc"
+
+    for (register in saved)
+      delete saved[register]
+    for (register in dirty)
+      delete dirty[register]
+  }
+
+  # an instruction may follow on the same line, so continue processing
+}
+
+/^$/ { next }
+
+{
+  printf ".loc 1 %d\n", line_number
+  print
+}
+
+# KEEPING UP WITH THE STACK POINTER
+# sp is only ever adjusted by a pre-indexed stp or a post-indexed ldp in this
+# source tree; there is no "sub sp,sp,#n" anywhere, so anything else touching
+# sp is left alone on purpose rather than guessed at.
+#
+# Unlike ARM's stm, stp stores its operands in the order they are written:
+# "stp xA,xB,[sp,#-16]!" puts xA at the new sp and xB eight bytes above it.
+#
+/^stp x[0-9]+,x[0-9]+,\[sp,#?-[0-9]+\]!$/ {
+  if (in_function) {
+    split($0, part, ",")
+    first  = part[1]; sub(/^stp /, "", first)
+    second = part[2]
+    size = part[3]; gsub(/[^0-9]/, "", size)
+    adjust_sp_offset(size + 0)
+
+    # A stored register keeps the caller's value if nothing has overwritten it
+    # yet, and then the copy on the stack is the one to report one level up.
+    if (!saved[first] && !dirty[first]) {
+      printf ".cfi_rel_offset %s,0\n", first
+      saved[first] = 1
+    }
+    if (!saved[second] && !dirty[second]) {
+      printf ".cfi_rel_offset %s,8\n", second
+      saved[second] = 1
+    }
+  }
+}
+
+/^ldp x[0-9]+,x[0-9]+,\[sp\],#?[0-9]+$/ {
+  if (in_function) {
+    # The load belongs to one return path, but the instructions after it may
+    # belong to another that never stored anything - the child half of clone.s
+    # is reached with the frame still in place. Bracketing the restore keeps
+    # that path on the stored state instead of inheriting this one.
+    if (!remembered) {
+      print ".cfi_remember_state"
+      snapshot()
+      remembered = 1
+    }
+    split($0, part, ",")
+    first  = part[1]; sub(/^ldp /, "", first)
+    second = part[2]
+    size = part[3]; gsub(/[^0-9]/, "", size)
+    adjust_sp_offset(-(size + 0))
+    if (saved[first])  { printf ".cfi_restore %s\n", first;  delete saved[first] }
+    if (saved[second]) { printf ".cfi_restore %s\n", second; delete saved[second] }
+  }
+}
+
+# End of a path: a return, or a tail call that never comes back. Conditional
+# branches - cbz, cbnz, b.eq and friends - are deliberately not matched, they
+# do not end anything.
+/^(ret|ret x30|br x[0-9]+|b [a-zA-Z0-9_]+|b [0-9]+[bf])$/ {
+  if (in_function && remembered) {
+    print ".cfi_restore_state"
+    rollback()
+    remembered = 0
+  }
+}
+
+# IF REGISTER VALUES ARE UNCEREMONIOUSLY TRASHED
+# ...then we want to know about it. Not an exhaustive list of instructions that
+# can overwrite an inherited register, just the ones this source tree uses.
+function trashed(register) {
+  if (in_function && !saved[register] && !dirty[register])
+    printf ".cfi_undefined %s\n", register
+  dirty[register] = 1
+}
+/^(mov|mvn|add|sub|and|orr|eor|bic|lsl|lsr|asr|mul|ldr|uxtw|sxtw) x[0-9]+,/ {
+  if (in_function)
+    trashed(substr($0, index($0, " ")+1, index($0, ",")-index($0, " ")-1))
+}
+
+END {
+  if (in_function)
+    print ".cfi_endproc"
+}

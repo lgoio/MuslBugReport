@@ -1,0 +1,135 @@
+--- a/src/thread/arm/syscall_cp.s
++++ b/src/thread/arm/syscall_cp.s
+@@ -1,4 +1,5 @@
+ .syntax unified
++.cfi_sections .debug_frame
+ .global __cp_begin
+ .hidden __cp_begin
+ .global __cp_end
+@@ -10,8 +11,14 @@
+ .hidden __syscall_cp_asm
+ .type __syscall_cp_asm,%function
+ __syscall_cp_asm:
++	.cfi_startproc
+ 	mov ip,sp
+ 	stmfd sp!,{r4,r5,r6,r7}
++	.cfi_adjust_cfa_offset 16
++	.cfi_rel_offset r4,0
++	.cfi_rel_offset r5,4
++	.cfi_rel_offset r6,8
++	.cfi_rel_offset r7,12
+ __cp_begin:
+ 	ldr r0,[r0]
+ 	cmp r0,#0
+@@ -22,8 +29,16 @@
+ 	ldmfd ip,{r2,r3,r4,r5,r6}
+ 	svc 0
+ __cp_end:
++	.cfi_remember_state
+ 	ldmfd sp!,{r4,r5,r6,r7}
++	.cfi_adjust_cfa_offset -16
++	.cfi_restore r4
++	.cfi_restore r5
++	.cfi_restore r6
++	.cfi_restore r7
+ 	bx lr
+ __cp_cancel:
++	.cfi_restore_state
+ 	ldmfd sp!,{r4,r5,r6,r7}
+ 	b __cancel
++	.cfi_endproc
+--- a/src/thread/arm/clone.s
++++ b/src/thread/arm/clone.s
+@@ -1,10 +1,17 @@
+ .syntax unified
++.cfi_sections .debug_frame
+ .text
+ .global __clone
+ .hidden __clone
+ .type   __clone,%function
+ __clone:
++	.cfi_startproc
+ 	stmfd sp!,{r4,r5,r6,r7}
++	.cfi_adjust_cfa_offset 16
++	.cfi_rel_offset r4,0
++	.cfi_rel_offset r5,4
++	.cfi_rel_offset r6,8
++	.cfi_rel_offset r7,12
+ 	mov r7,#120
+ 	mov r6,r3
+ 	mov r5,r0
+@@ -16,10 +23,18 @@
+ 	svc 0
+ 	tst r0,r0
+ 	beq 1f
++	.cfi_remember_state
+ 	ldmfd sp!,{r4,r5,r6,r7}
++	.cfi_adjust_cfa_offset -16
++	.cfi_restore r4
++	.cfi_restore r5
++	.cfi_restore r6
++	.cfi_restore r7
+ 	bx lr
+ 
+-1:	mov fp,#0
++1:	.cfi_restore_state
++	.cfi_undefined lr
++	mov fp,#0
+ 	mov r0,r6
+ 	bl 3f
+ 2:	mov r7,#1
+@@ -27,3 +42,4 @@
+ 	b 2b
+ 
+ 3:	bx r5
++	.cfi_endproc
+--- a/src/thread/aarch64/syscall_cp.s
++++ b/src/thread/aarch64/syscall_cp.s
+@@ -4,6 +4,7 @@
+ // syscall(nr, u, v, w, x, y, z)
+ //         x8  x0 x1 x2 x3 x4 x5
+ 
++.cfi_sections .debug_frame
+ .global __cp_begin
+ .hidden __cp_begin
+ .global __cp_end
+@@ -15,6 +16,7 @@
+ .hidden __syscall_cp_asm
+ .type __syscall_cp_asm,%function
+ __syscall_cp_asm:
++	.cfi_startproc
+ __cp_begin:
+ 	ldr w0,[x0]
+ 	cbnz w0,__cp_cancel
+@@ -30,3 +32,4 @@
+ 	ret
+ __cp_cancel:
+ 	b __cancel
++	.cfi_endproc
+--- a/src/thread/aarch64/clone.s
++++ b/src/thread/aarch64/clone.s
+@@ -4,10 +4,12 @@
+ // syscall(SYS_clone, flags, stack, ptid, tls, ctid)
+ //         x8,        x0,    x1,    x2,   x3,  x4
+ 
++.cfi_sections .debug_frame
+ .global __clone
+ .hidden __clone
+ .type   __clone,%function
+ __clone:
++	.cfi_startproc
+ 	// align stack and save func,arg
+ 	and x1,x1,#-16
+ 	stp x0,x3,[x1,#-16]!
+@@ -24,8 +26,10 @@
+ 	// parent
+ 	ret
+ 	// child
+-1:	mov x29, 0
++1:	.cfi_undefined x30
++	mov x29, 0
+ 	ldp x1,x0,[sp],#16
+ 	blr x1
+ 	mov x8,#93 // SYS_exit
+ 	svc #0
++	.cfi_endproc

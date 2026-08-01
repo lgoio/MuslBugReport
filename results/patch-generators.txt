@@ -1,0 +1,74 @@
+=== generator variant - measured, not argued
+
+tools/add-cfi.arm.awk and tools/add-cfi.aarch64.awk were written after
+tools/add-cfi.x86_64.awk and dropped into an otherwise untouched musl
+1.2.6 tree. No .s file was edited. configure then finds them and turns
+ADD_CFI on by itself, which puts every arm/aarch64 .s file through the
+generator - 13 files per architecture, not the 2 that carry the bug.
+
+Build: Alpine 3.24, gcc 15.2.0, CFLAGS="-g -O2", both architectures.
+Then the container libc was replaced and the reproducer backtraced with
+plain gdb, exactly as in the hand-written run.
+
+---------------- armv7 ----------------
+
+  ### ADD_CFI = yes
+  ### BUILD OK
+  ### gdb laeuft weiter
+  Thread 4 (Thread 18008.18041 (CPU#3 [running])):
+  #0  __cp_end () at src/thread/arm/syscall_cp.s:25
+  #1  0x4084ac14 in __syscall_cp_c (nr=240, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=1083174064, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x4084a116 in __futex4_cp (addr=<optimized out>, op=<optimized out>, val=<optimized out>, to=<optimized out>) at src/thread/__timedwait.c:24
+  #3  __timedwait_cp (addr=addr@entry=0x408fed00, val=val@entry=2, clk=clk@entry=0, at=at@entry=0x408fed38, priv=128, priv@entry=1) at src/thread/__timedwait.c:52
+  #4  0x4084b01e in __pthread_cond_timedwait (c=c@entry=0x402038 <g_cond>, m=m@entry=0x402020 <g_mutex>, ts=ts@entry=0x408fed38) at src/thread/pthread_cond_timedwait.c:100
+  #5  0x00400a5a in park_in_cond () at sleeper.c:60
+  #6  0x00400a94 in level_three (kind=<optimized out>) at sleeper.c:74
+  #7  0x00400a9a in level_two (kind=<optimized out>) at sleeper.c:81
+  #8  0x00400a9e in level_one (kind=<optimized out>) at sleeper.c:86
+  #9  0x00400aa6 in worker (arg=<optimized out>) at sleeper.c:91
+  #10 0x4084b8b0 in start (p=0x408fed70) at src/thread/pthread_create.c:207
+  #11 0x40855e92 in __clone () at src/thread/arm/clone.s:24
+  #12 0x40855e92 in __clone () at src/thread/arm/clone.s:24
+  #13 0x40855e92 in __clone () at src/thread/arm/clone.s:24
+  #14 0x40855e92 in __clone () at src/thread/arm/clone.s:24
+  #15 0x40855e92 in __clone () at src/thread/arm/clone.s:24
+  #16 0x40855e92 in __clone () at src/thread/arm/clone.s:24
+  #17 0x40855e92 in __clone () at src/thread/arm/clone.s:24
+  #18 0x40855e92 in __clone () at src/thread/arm/clone.s:24
+
+---------------- aarch64 ----------------
+
+  ### ADD_CFI = yes
+  ### BUILD OK
+  ### gdb laeuft weiter
+  Thread 4 (Thread 17330.17363 (CPU#3 [running])):
+  #0  __cp_end () at src/thread/aarch64/syscall_cp.s:30
+  #1  0x0000725e69918670 in __syscall_cp_c (nr=<optimized out>, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=<optimized out>, z=<optimized out>) at src/thread/pthread_cancel.c:33
+  #2  0x0000725e69917410 in __futex4_cp (addr=0x725e697c1a74, op=128, val=2, to=<optimized out>) at src/thread/__timedwait.c:24
+  #3  __timedwait_cp (addr=addr@entry=0x725e697c1a74, val=val@entry=2, clk=clk@entry=0, at=at@entry=0x725e697c1a88, priv=128, priv@entry=1) at src/thread/__timedwait.c:52
+  #4  0x0000725e69918c74 in __pthread_cond_timedwait (c=c@entry=0x725e6a1a0068 <g_cond>, m=m@entry=0x725e6a1a0040 <g_mutex>, ts=ts@entry=0x725e697c1a88) at src/thread/pthread_cond_timedwait.c:100
+  #5  0x0000725e6a180dfc in park_in_cond () at sleeper.c:60
+  #6  0x0000725e6a180e50 in level_three (kind=<optimized out>) at sleeper.c:74
+  #7  0x0000725e6a180e64 in level_two (kind=<optimized out>) at sleeper.c:81
+  #8  0x0000725e6a180e68 in level_one (kind=<optimized out>) at sleeper.c:86
+  #9  0x0000725e6a180e74 in worker (arg=<optimized out>) at sleeper.c:91
+  #10 0x0000725e6991983c in start (p=0x725e697c1b00) at src/thread/pthread_create.c:207
+  #11 0x0000725e6992be74 in __clone () at src/thread/aarch64/clone.s:29
+  Backtrace stopped: previous frame identical to this frame (corrupt stack?)
+  
+  Thread 3 (Thread 17330.17362 (CPU#2 [running])):
+
+---------------- verdict ----------------
+
+Both architectures build and every sleeping thread unwinds to its entry
+point. The generator does the job it was written for.
+
+It cannot finish clone.s. Terminating a thread stack means marking the
+return address undefined in the child path, and nothing in the assembly
+says which path that is - it is knowledge about what the function means,
+not about what it does. On arm __clone therefore still repeats until the
+backtrace limit; on aarch64 it stops, but with "corrupt stack?" instead
+of a clean end.
+
+The hand-written patch ends both cleanly, because it carries that one
+directive. Either way clone.s needs it, so the two are not alternatives.

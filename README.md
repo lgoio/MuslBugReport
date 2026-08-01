@@ -94,6 +94,16 @@ the whole chain appears:
 Everything above the stub unwinds normally, because everything above it does
 have unwind tables. One missing frame is all that stands in the way.
 
+## A fix
+
+[`patch/`](patch/) holds a patch against musl 1.2.6 that adds the missing
+`.cfi_*` directives, and a script that verifies it. With it in place, plain gdb —
+no add-on of any kind — reaches the thread entry point on armhf, armv7 and
+aarch64, and `__clone` stops repeating.
+
+The generated code is unchanged: `.text` is byte-identical before and after,
+because `.cfi_*` directives emit a debug section and nothing else.
+
 ## Running it
 
 Debian or Ubuntu with Docker. Everything else is checked and offered:
