@@ -97,7 +97,7 @@ live backtrace
   107		__asm__ __volatile__("" ::: "memory");
   Loaded unwinder: musl-syscall-cp (arm32 + aarch64; thread apply all -c bt)
   
-  Thread 4 (Thread 1.220 (CPU#3 [running])):
+  Thread 4 (Thread 1.223 (CPU#3 [running])):
   #0  __cp_end () at src/thread/riscv64/syscall_cp.s:27
   #1  0x0000004002854644 in __syscall_cp_c (nr=98, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=<optimized out>, z=<optimized out>) at src/thread/pthread_cancel.c:33
   #2  0x0000004002853b62 in __futex4_cp (addr=0x4002906a24, op=128, val=2, to=<optimized out>) at src/thread/__timedwait.c:24
@@ -112,7 +112,7 @@ live backtrace
   #11 0x0000004002856b8a in __clone () at src/thread/riscv64/clone.s:31
   Backtrace stopped: frame did not save the PC
   
-  Thread 3 (Thread 1.219 (CPU#2 [running])):
+  Thread 3 (Thread 1.222 (CPU#2 [running])):
   #0  __cp_end () at src/thread/riscv64/syscall_cp.s:27
   #1  0x0000004002854644 in __syscall_cp_c (nr=101, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=<optimized out>, z=<optimized out>) at src/thread/pthread_cancel.c:33
   #2  0x0000004002858bac in __clock_nanosleep (clk=0, flags=0, req=0x0, rem=0x0) at src/time/clock_nanosleep.c:33
@@ -127,7 +127,7 @@ live backtrace
   #11 0x0000004002856b8a in __clone () at src/thread/riscv64/clone.s:31
   Backtrace stopped: frame did not save the PC
   
-  Thread 2 (Thread 1.218 (CPU#1 [running])):
+  Thread 2 (Thread 1.221 (CPU#1 [running])):
   #0  __cp_end () at src/thread/riscv64/syscall_cp.s:27
   #1  0x0000004002854644 in __syscall_cp_c (nr=73, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=<optimized out>, y=<optimized out>, z=<optimized out>) at src/thread/pthread_cancel.c:33
   #2  0x0000004002848506 in poll (fds=fds@entry=0x0, n=n@entry=0, timeout=timeout@entry=-1) at src/select/poll.c:16
@@ -140,7 +140,7 @@ live backtrace
   #9  0x0000004002856b8a in __clone () at src/thread/riscv64/clone.s:31
   Backtrace stopped: frame did not save the PC
   
-  Thread 1 (Thread 1.192 (CPU#0 [running])):
+  Thread 1 (Thread 1.195 (CPU#0 [running])):
   #0  parked () at sleeper.c:107
   #1  0x0000004000000adc in main () at sleeper.c:126
   __cp_begin..__cp_end: 0x4002856b92..0x4002856bb0

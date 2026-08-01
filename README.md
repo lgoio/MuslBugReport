@@ -108,16 +108,21 @@ produce those.
 
 Full output per architecture:
 
-- [`results/report-x86_64.txt`](results/report-x86_64.txt) — reference, everything works
-- [`results/report-armhf.txt`](results/report-armhf.txt)
-- [`results/report-armv7.txt`](results/report-armv7.txt)
-- [`results/report-aarch64.txt`](results/report-aarch64.txt)
+- [`report-x86_64.txt`](results/report-x86_64.txt) — reference, nothing missing
+- [`report-armhf.txt`](results/report-armhf.txt) — the gap is visible here
+- [`report-armv7.txt`](results/report-armv7.txt) — and here
+- [`report-aarch64.txt`](results/report-aarch64.txt)
+- [`report-riscv64.txt`](results/report-riscv64.txt)
+- [`report-ppc64le.txt`](results/report-ppc64le.txt)
+- [`report-s390x.txt`](results/report-s390x.txt)
+- [`report-loongarch64.txt`](results/report-loongarch64.txt) — tables only, see the note in it
 
 ## The same problem at the other end
 
-`clone.s` is unannotated too. It sits at the bottom of every thread stack, so
-even a backtrace that gets that far cannot stop properly — gdb repeats the last
-frame until it hits a limit:
+`clone.s` is unannotated too, and it sits at the bottom of every thread stack.
+On 32-bit ARM, once the syscall frame is described, the backtrace reaches
+`__clone` and then cannot stop — gdb repeats the last frame until it hits a
+limit:
 
 ```
 #11 __clone () at src/thread/arm/clone.s:24
@@ -126,11 +131,16 @@ frame until it hits a limit:
 ...
 ```
 
-## Proof that this is the only cause
+On the other architectures measured here `__clone` appears once per thread
+today, so the missing table costs nothing visible at that end. It is still
+missing.
 
-`container/gdb_musl_unwinder.py` is a small gdb add-on that supplies the one
-missing frame and nothing else. It reads no debug information. With it loaded,
-the whole chain appears:
+## What the gdb add-on shows
+
+`container/gdb_musl_unwinder.py` supplies the one frame the stub does not
+describe, and nothing else. It reads no debug information — the layout comes
+from the disassembly. On 32-bit ARM, where the frames are otherwise lost, the
+whole chain comes back with it loaded:
 
 ```
 #4  __pthread_cond_timedwait (...) at src/thread/pthread_cond_timedwait.c:100
@@ -142,8 +152,10 @@ the whole chain appears:
 #10 start () at src/thread/pthread_create.c:207
 ```
 
-Everything above the stub unwinds normally, because everything above it does
-have unwind tables. One missing frame is all that stands in the way.
+Everything above the stub unwinds normally, because everything above it has
+unwind tables. That single frame is the whole difference — which is what
+identifies the gap, and why the fix belongs in the library rather than in a
+debugger script.
 
 ## A fix
 
@@ -203,6 +215,10 @@ You do not have to run it to see the outcome. This is what it prints:
 === emulation
     all platforms already run.
 
+=== qemu binaries for the images
+    loongarch64 minirootfs present.
+    all present.
+
 === x86_64 (linux/amd64)
     building alpine-bugreport-x86_64
     running both gdb passes
@@ -223,22 +239,45 @@ You do not have to run it to see the outcome. This is what it prints:
     running both gdb passes
     written to results/report-aarch64.txt
 
+=== riscv64 (linux/riscv64)
+    building alpine-bugreport-riscv64
+    running both gdb passes
+    written to results/report-riscv64.txt
+
+=== ppc64le (linux/ppc64le)
+    building alpine-bugreport-ppc64le
+    running both gdb passes
+    written to results/report-ppc64le.txt
+
+=== s390x (linux/s390x)
+    building alpine-bugreport-s390x
+    running both gdb passes
+    written to results/report-s390x.txt
+
+=== loongarch64 (linux/loong64)
+    building alpine-bugreport-loongarch64
+    running both gdb passes
+    written to results/report-loongarch64.txt
+
 === result
-    completed: x86_64 armhf armv7 aarch64
+    completed: x86_64 armhf armv7 aarch64 riscv64 ppc64le s390x loongarch64
 
     Each report contains two gdb passes over the same process:
       run 1  plain gdb
       run 2  same gdb plus gdb_musl_unwinder.py
 
-    Expected picture:
-      x86_64   both passes show the full call chain - no gap to begin with
-      armhf    run 1 truncated, run 2 complete
-      armv7    run 1 truncated, run 2 complete
-      aarch64  run 1 truncated, run 2 complete
+    No FDE covers __syscall_cp_asm or __clone on any of these except
+    x86_64. What that costs differs, and the reports show which:
 
-    Attach the report-*.txt files. The contrast is the argument:
-    same source, same Alpine version, same packages - only the
-    architecture differs.
+      x86_64       covered by musl own generator - nothing missing
+      armhf        run 1 loses the application frames, run 2 recovers
+      armv7        them - this is where the gap is visible
+      aarch64      no FDE either, but gdb fallback guess happens to be
+      riscv64      right for these stubs, so run 1 already shows the
+      ppc64le      chain. The tables are still missing.
+      s390x
+      loongarch64  FDE coverage only - the emulated gdb server ignores
+                   the breakpoint, so no live backtrace is taken here
 ```
 
 The files it names are the ones committed under
@@ -261,7 +300,10 @@ container/sleeper.c         three threads parked through a 3-deep call chain
 container/entrypoint.sh     produces the report
 container/gdb_*_command_file   the two gdb runs, one line apart
 container/gdb_musl_unwinder.py the add-on described above
-results/                    output
+patch/tools/                the six generators - the actual fix
+patch/000N-*.patch          the same, as a per-architecture series
+patch/verify.sh             checks them, two stages
+results/                    output, one report per architecture
 ```
 
 ## Note on the reproducer

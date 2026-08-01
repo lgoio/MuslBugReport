@@ -94,7 +94,7 @@ live backtrace
   107		__asm__ __volatile__("" ::: "memory");
   Loaded unwinder: musl-syscall-cp (arm32 + aarch64; thread apply all -c bt)
   
-  Thread 4 (Thread 1.220 (CPU#3 [running])):
+  Thread 4 (Thread 1.223 (CPU#3 [running])):
   #0  __cp_end () at src/thread/powerpc64/syscall_cp.s:32
   #1  0x0000004002899e50 in __syscall_cp_c (nr=221, u=2, v=274921285936, w=0, x=0, y=0, z=0) at src/thread/pthread_cancel.c:33
   #2  0x0000004002898504 in __syscall_cp (nr=<optimized out>, nr@entry=221, u=<optimized out>, u@entry=274921286068, v=<optimized out>, w=<optimized out>, w@entry=2, x=<optimized out>, x@entry=274921285936, y=<optimized out>, y@entry=0, z=<optimized out>, z@entry=0) at src/thread/__syscall_cp.c:19
@@ -109,7 +109,7 @@ live backtrace
   #11 0x000000400289b73c in start (p=0x400295eb00) at src/thread/pthread_create.c:207
   #12 0x00000040028accac in __clone () at src/thread/powerpc64/clone.s:44
   
-  Thread 3 (Thread 1.219 (CPU#2 [running])):
+  Thread 3 (Thread 1.222 (CPU#2 [running])):
   #0  __cp_end () at src/thread/powerpc64/syscall_cp.s:32
   #1  0x0000004002899eb0 in __syscall_cp_c (nr=162, u=0, v=0, w=0, x=0, y=0, z=0) at src/thread/pthread_cancel.c:33
   #2  0x0000004002898504 in __syscall_cp (nr=<optimized out>, nr@entry=162, u=<optimized out>, u@entry=0, v=<optimized out>, v@entry=0, w=<optimized out>, w@entry=0, x=<optimized out>, x@entry=0, y=<optimized out>, y@entry=0, z=<optimized out>, z@entry=0) at src/thread/__syscall_cp.c:19
@@ -124,7 +124,7 @@ live backtrace
   #11 0x000000400289b73c in start (p=0x400293bb00) at src/thread/pthread_create.c:207
   #12 0x00000040028accac in __clone () at src/thread/powerpc64/clone.s:44
   
-  Thread 2 (Thread 1.218 (CPU#1 [running])):
+  Thread 2 (Thread 1.221 (CPU#1 [running])):
   #0  __cp_end () at src/thread/powerpc64/syscall_cp.s:32
   #1  0x0000004002899eb0 in __syscall_cp_c (nr=167, u=-1, v=0, w=0, x=0, y=0, z=0) at src/thread/pthread_cancel.c:33
   #2  0x0000004002898504 in __syscall_cp (nr=<optimized out>, nr@entry=167, u=<optimized out>, u@entry=0, v=<optimized out>, v@entry=0, w=<optimized out>, w@entry=-1, x=<optimized out>, x@entry=0, y=<optimized out>, y@entry=0, z=<optimized out>, z@entry=0) at src/thread/__syscall_cp.c:19
@@ -137,7 +137,7 @@ live backtrace
   #9  0x000000400289b73c in start (p=0x4002918b00) at src/thread/pthread_create.c:207
   #10 0x00000040028accac in __clone () at src/thread/powerpc64/clone.s:44
   
-  Thread 1 (Thread 1.192 (CPU#0 [running])):
+  Thread 1 (Thread 1.195 (CPU#0 [running])):
   #0  parked () at sleeper.c:107
   #1  0x0000004000000bf4 in main () at sleeper.c:126
   __cp_begin..__cp_end: 0x40028accb4..0x40028acce0
