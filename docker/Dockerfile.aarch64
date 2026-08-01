@@ -14,7 +14,7 @@
 # that instead. ../run-on-host.sh fetches the binary if it is missing.
 #
 #   docker build -f docker/Dockerfile.aarch64 -t alpine-bugreport-aarch64 .
-FROM --platform=linux/arm64 arm64v8/alpine:3.23
+FROM --platform=linux/arm64 arm64v8/alpine:3.24
 
 COPY docker/qemu-aarch64-static /usr/bin/
 

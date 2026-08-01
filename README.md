@@ -33,12 +33,15 @@ tools/add-cfi.x86_64.awk
 There is none for `arm` or `aarch64`. So `ADD_CFI=no`, the assembly is used
 unannotated, and no `.s` file carries `.cfi_*` directives by hand.
 
+This is unchanged in musl 1.2.6, the current release — which is what the
+measurement below was taken against.
+
 This is not a distribution problem. No build flag can add information that the
 source does not contain.
 
 ## What was measured
 
-Same musl version (1.2.5), same compiler, four architectures. The question is
+Same musl version (1.2.6, the current release), same compiler, four architectures. The question is
 whether the unwind tables describe each function on the blocking-call path:
 
 | function           | x86_64 | armhf | armv7 | aarch64 |
@@ -104,6 +107,60 @@ Debian or Ubuntu with Docker. Everything else is checked and offered:
 This builds one image per architecture and writes the files under `results/`.
 The table above needs no debugger and no ARM hardware — it is read straight
 out of the ELF files.
+
+You do not have to run it to see the outcome. This is what it prints:
+
+```
+=== host
+    Ubuntu 26.04 LTS
+    kernel 7.0.0-28-generic, arch x86_64
+
+=== docker
+    docker present: Docker version 29.6.0, build fb59821
+
+=== emulation
+    all platforms already run.
+
+=== x86_64 (linux/amd64)
+    building alpine-bugreport-x86_64
+    running both gdb passes
+    written to results/report-x86_64.txt
+
+=== armhf (linux/arm/v6)
+    building alpine-bugreport-armhf
+    running both gdb passes
+    written to results/report-armhf.txt
+
+=== armv7 (linux/arm/v7)
+    building alpine-bugreport-armv7
+    running both gdb passes
+    written to results/report-armv7.txt
+
+=== aarch64 (linux/arm64)
+    building alpine-bugreport-aarch64
+    running both gdb passes
+    written to results/report-aarch64.txt
+
+=== result
+    completed: x86_64 armhf armv7 aarch64
+
+    Each report contains two gdb passes over the same process:
+      run 1  plain gdb
+      run 2  same gdb plus gdb_musl_unwinder.py
+
+    Expected picture:
+      x86_64   both passes show the full call chain - no gap to begin with
+      armhf    run 1 truncated, run 2 complete
+      armv7    run 1 truncated, run 2 complete
+      aarch64  run 1 truncated, run 2 complete
+
+    Attach the report-*.txt files. The contrast is the argument:
+    same source, same Alpine version, same packages - only the
+    architecture differs.
+```
+
+The files it names are the ones committed under
+[`results/`](results/), so the two can be compared directly.
 
 To look around by hand:
 

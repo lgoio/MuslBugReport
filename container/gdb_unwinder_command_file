@@ -5,8 +5,6 @@
 # /tmp/connect.gdb, because it differs per platform: attach where ptrace
 # works, target remote via qemu's gdb server where it does not.
 
-source gdb_musl_unwinder.py
-
 set sysroot /
 # Bounds a runaway unwind: without it a bad unwinder keeps producing
 # frames and gdb spins at 100% CPU instead of failing visibly.
@@ -20,6 +18,10 @@ set print inferior-events off
 set print thread-events off
 
 source /tmp/connect.gdb
+
+# After connect, not before: the unwinder resolves __cp_begin/__cp_end when
+# it is sourced, and those symbols only exist once musl is mapped.
+source gdb_musl_unwinder.py
 
 thread apply all -c bt
 musl-unwinder-status

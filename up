@@ -33,7 +33,7 @@ for ENTRY in $PLATFORMS; do
 	IMAGE="$IMAGE_PREFIX-$LABEL"
 	NAME="$NAME_PREFIX-$LABEL"
 
-	if ! $DOCKER run --rm --platform "$PLAT" alpine:3.23 true >/dev/null 2>&1; then
+	if ! $DOCKER run --rm --platform "$PLAT" alpine:3.24 true >/dev/null 2>&1; then
 		printf '%-10s skipped - %s cannot run here (see ./run-on-host.sh)\n' "$LABEL" "$PLAT"
 		continue
 	fi

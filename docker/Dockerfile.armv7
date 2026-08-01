@@ -14,7 +14,7 @@
 # that instead. ../run-on-host.sh fetches the binary if it is missing.
 #
 #   docker build -f docker/Dockerfile.armv7 -t alpine-bugreport-armv7 .
-FROM --platform=linux/arm/v7 arm32v7/alpine:3.23
+FROM --platform=linux/arm/v7 arm32v7/alpine:3.24
 
 COPY docker/qemu-arm-static /usr/bin/
 

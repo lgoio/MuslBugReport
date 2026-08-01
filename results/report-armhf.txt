@@ -6,7 +6,7 @@ WARNING: The requested image's platform (linux/arm/v6) does not match the detect
 
 environment
   arch           armhf / armv7l
-  musl           Version 1.2.5
+  musl           Version 1.2.6
   gdb            (GDB) 16.3
   gcc            gcc (Alpine 15.2.0) 15.2.0
   musl-dbg       installed
@@ -17,16 +17,16 @@ the test program itself
 
 musl unwind coverage
   debug file   /usr/lib/debug/lib/ld-musl-armhf.so.1.debug
-  FDEs         1930
+  FDEs         1932
 
   symbol             address        FDE
   ----------------------------------------------------------
-  __syscall_cp_asm   0x0005c790     MISSING
-  __cp_begin         0x0005c798     MISSING
-  __cp_end           0x0005c7b8     MISSING
-  __syscall_cp_c     0x0005d67c     ok
-  nanosleep          0x0006690c     ok
-  poll               0x0004f7b8     ok
+  __syscall_cp_asm   0x0005cc64     MISSING
+  __cp_begin         0x0005cc6c     MISSING
+  __cp_end           0x0005cc8c     MISSING
+  __syscall_cp_c     0x0005db50     ok
+  nanosleep          0x000671e0     ok
+  poll               0x000509f8     ok
   ----------------------------------------------------------
 
 VERDICT  3 of 6 symbols on the cancellable-syscall path have no FDE.
@@ -36,7 +36,7 @@ VERDICT  3 of 6 symbols on the cancellable-syscall path have no FDE.
 live backtrace
 
   --- without gdb_musl_unwinder.py ---
-  0x408682b8 in _dlstart () from /lib/ld-musl-armhf.so.1
+  0x40868b8c in _dlstart () from /lib/ld-musl-armhf.so.1
   Breakpoint 1 at 0x400a94: file sleeper.c, line 107.
   
   Thread 1 hit Breakpoint 1, parked () at sleeper.c:107
@@ -44,19 +44,19 @@ live backtrace
   
   Thread 4 (Thread 156.184 (CPU#3 [running])):
   #0  __cp_end () at src/thread/arm/syscall_cp.s:25
-  #1  0x4085e6dc in __syscall_cp_c (nr=0, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=1083280632, y=2, z=1082789752) at src/thread/pthread_cancel.c:33
+  #1  0x4085ebb0 in __syscall_cp_c (nr=0, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=1083280632, y=2, z=1082789748) at src/thread/pthread_cancel.c:33
   #2  0x00000000 in ?? ()
   Backtrace stopped: previous frame identical to this frame (corrupt stack?)
   
   Thread 3 (Thread 156.183 (CPU#2 [running])):
   #0  __cp_end () at src/thread/arm/syscall_cp.s:25
-  #1  0x4085e6dc in __syscall_cp_c (nr=0, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=3600, y=3600, z=0) at src/thread/pthread_cancel.c:33
+  #1  0x4085ebb0 in __syscall_cp_c (nr=0, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=3600, y=3600, z=0) at src/thread/pthread_cancel.c:33
   #2  0x00000000 in ?? ()
   Backtrace stopped: previous frame identical to this frame (corrupt stack?)
   
   Thread 2 (Thread 156.182 (CPU#1 [running])):
   #0  __cp_end () at src/thread/arm/syscall_cp.s:25
-  #1  0x4085e6dc in __syscall_cp_c (nr=0, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=1082994032, y=1082522596, z=175) at src/thread/pthread_cancel.c:33
+  #1  0x4085ebb0 in __syscall_cp_c (nr=0, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=1082994032, y=1082523832, z=175) at src/thread/pthread_cancel.c:33
   #2  0x00000000 in ?? ()
   Backtrace stopped: previous frame identical to this frame (corrupt stack?)
   
@@ -65,215 +65,215 @@ live backtrace
   #1  0x004007fc in main () at sleeper.c:126
 
   --- with gdb_musl_unwinder.py (one line different) ---
-  Loaded unwinder: musl-syscall-cp (arm32 + aarch64; thread apply all -c bt)
-  0x408682b8 in _dlstart () from /lib/ld-musl-armhf.so.1
+  0x40868b8c in _dlstart () from /lib/ld-musl-armhf.so.1
   Breakpoint 1 at 0x400a94: file sleeper.c, line 107.
   
   Thread 1 hit Breakpoint 1, parked () at sleeper.c:107
   107		__asm__ __volatile__("" ::: "memory");
+  Loaded unwinder: musl-syscall-cp (arm32 + aarch64; thread apply all -c bt)
   
   Thread 4 (Thread 192.220 (CPU#3 [running])):
   #0  __cp_end () at src/thread/arm/syscall_cp.s:25
-  #1  0x4085e6dc in __syscall_cp_c (nr=240, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=1083280552, y=0, z=0) at src/thread/pthread_cancel.c:33
-  #2  0x4085d2e0 in __futex4_cp (addr=<optimized out>, op=<optimized out>, val=<optimized out>, to=<optimized out>) at src/thread/__timedwait.c:24
+  #1  0x4085ebb0 in __syscall_cp_c (nr=240, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=1083280552, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x4085d7b0 in __futex4_cp (addr=<optimized out>, op=<optimized out>, val=<optimized out>, to=<optimized out>) at src/thread/__timedwait.c:24
   #3  __timedwait_cp (addr=addr@entry=0x40918cf8, val=val@entry=2, clk=clk@entry=1, at=at@entry=0x40918d30, priv=128, priv@entry=1) at src/thread/__timedwait.c:52
-  #4  0x4085ec48 in __pthread_cond_timedwait (c=c@entry=0x402038 <g_cond>, m=m@entry=0x402020 <g_mutex>, ts=0x40918d30, ts@entry=0x400b94 <park_in_cond+112>) at src/thread/pthread_cond_timedwait.c:100
+  #4  0x4085f11c in __pthread_cond_timedwait (c=c@entry=0x402038 <g_cond>, m=m@entry=0x402020 <g_mutex>, ts=0x40918d30, ts@entry=0x400b94 <park_in_cond+112>) at src/thread/pthread_cond_timedwait.c:100
   #5  0x00400b94 in park_in_cond () at sleeper.c:60
   #6  0x00400bf0 in level_three (kind=<optimized out>) at sleeper.c:74
   #7  0x00400bfc in level_two (kind=<optimized out>) at sleeper.c:81
   #8  0x00400c00 in level_one (kind=<optimized out>) at sleeper.c:86
   #9  0x00400c08 in worker (arg=<optimized out>) at sleeper.c:91
-  #10 0x4085fc20 in start (p=0x40918d70) at src/thread/pthread_create.c:207
-  #11 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #12 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #13 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #14 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #15 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #16 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #17 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #18 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #19 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #20 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #21 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #22 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #23 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #24 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #25 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #26 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #27 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #28 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #29 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #30 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #31 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #32 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #33 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #34 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #35 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #36 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #37 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #38 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #39 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #40 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #41 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #42 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #43 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #44 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #45 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #46 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #47 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #48 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #49 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #50 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #51 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #52 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #53 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #54 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #55 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #56 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #57 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #58 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #59 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #60 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #61 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #62 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #63 0x4085d780 in __clone () at src/thread/arm/clone.s:23
+  #10 0x408600f4 in start (p=0x40918d70) at src/thread/pthread_create.c:207
+  #11 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #12 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #13 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #14 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #15 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #16 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #17 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #18 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #19 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #20 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #21 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #22 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #23 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #24 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #25 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #26 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #27 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #28 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #29 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #30 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #31 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #32 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #33 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #34 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #35 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #36 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #37 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #38 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #39 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #40 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #41 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #42 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #43 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #44 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #45 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #46 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #47 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #48 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #49 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #50 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #51 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #52 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #53 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #54 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #55 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #56 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #57 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #58 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #59 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #60 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #61 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #62 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #63 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
   
   Thread 3 (Thread 192.219 (CPU#2 [running])):
   #0  __cp_end () at src/thread/arm/syscall_cp.s:25
-  #1  0x4085e6dc in __syscall_cp_c (nr=162, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=0, y=0, z=0) at src/thread/pthread_cancel.c:33
-  #2  0x40863a44 in __clock_nanosleep (clk=clk@entry=0, flags=flags@entry=0, req=req@entry=0x408f5d28, rem=rem@entry=0x0) at src/time/clock_nanosleep.c:23
-  #3  0x4086400c in __nanosleep_time64 (req=req@entry=0x408f5d28, rem=rem@entry=0x0) at src/time/nanosleep.c:6
+  #1  0x4085ebb0 in __syscall_cp_c (nr=162, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=0, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x40863f1c in __clock_nanosleep (clk=clk@entry=0, flags=flags@entry=0, req=req@entry=0x408f5d28, rem=rem@entry=0x0) at src/time/clock_nanosleep.c:23
+  #3  0x408644e4 in __nanosleep_time64 (req=req@entry=0x408f5d28, rem=rem@entry=0x0) at src/time/nanosleep.c:6
   #4  0x00400ae8 in park_in_sleep () at sleeper.c:50
   #5  0x00400bf4 in level_three (kind=<optimized out>) at sleeper.c:71
   #6  0x00400bfc in level_two (kind=<optimized out>) at sleeper.c:81
   #7  0x00400c00 in level_one (kind=<optimized out>) at sleeper.c:86
   #8  0x00400c08 in worker (arg=<optimized out>) at sleeper.c:91
-  #9  0x4085fc20 in start (p=0x408f5d70) at src/thread/pthread_create.c:207
-  #10 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #11 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #12 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #13 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #14 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #15 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #16 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #17 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #18 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #19 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #20 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #21 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #22 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #23 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #24 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #25 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #26 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #27 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #28 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #29 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #30 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #31 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #32 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #33 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #34 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #35 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #36 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #37 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #38 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #39 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #40 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #41 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #42 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #43 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #44 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #45 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #46 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #47 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #48 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #49 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #50 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #51 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #52 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #53 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #54 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #55 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #56 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #57 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #58 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #59 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #60 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #61 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #62 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #63 0x4085d780 in __clone () at src/thread/arm/clone.s:23
+  #9  0x408600f4 in start (p=0x408f5d70) at src/thread/pthread_create.c:207
+  #10 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #11 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #12 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #13 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #14 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #15 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #16 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #17 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #18 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #19 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #20 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #21 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #22 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #23 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #24 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #25 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #26 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #27 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #28 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #29 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #30 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #31 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #32 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #33 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #34 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #35 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #36 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #37 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #38 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #39 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #40 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #41 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #42 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #43 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #44 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #45 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #46 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #47 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #48 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #49 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #50 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #51 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #52 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #53 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #54 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #55 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #56 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #57 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #58 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #59 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #60 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #61 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #62 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #63 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
   
   Thread 2 (Thread 192.218 (CPU#1 [running])):
   #0  __cp_end () at src/thread/arm/syscall_cp.s:25
-  #1  0x4085e6dc in __syscall_cp_c (nr=168, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=0, y=0, z=0) at src/thread/pthread_cancel.c:33
-  #2  0x408507e4 in poll (fds=fds@entry=0x0, n=n@entry=0, timeout=timeout@entry=-1) at src/select/poll.c:9
+  #1  0x4085ebb0 in __syscall_cp_c (nr=168, u=<optimized out>, v=<optimized out>, w=<optimized out>, x=0, y=0, z=0) at src/thread/pthread_cancel.c:33
+  #2  0x40851a24 in poll (fds=fds@entry=0x0, n=n@entry=0, timeout=timeout@entry=-1) at src/select/poll.c:9
   #3  0x00400aa8 in poll (__f=0x0, __n=0, __s=-1) at /usr/include/fortify/poll.h:40
   #4  0x00400bf8 in level_three (kind=<optimized out>) at sleeper.c:68
   #5  0x00400bfc in level_two (kind=<optimized out>) at sleeper.c:81
   #6  0x00400c00 in level_one (kind=<optimized out>) at sleeper.c:86
   #7  0x00400c08 in worker (arg=<optimized out>) at sleeper.c:91
-  #8  0x4085fc20 in start (p=0x408d2d70) at src/thread/pthread_create.c:207
-  #9  0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #10 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #11 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #12 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #13 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #14 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #15 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #16 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #17 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #18 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #19 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #20 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #21 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #22 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #23 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #24 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #25 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #26 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #27 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #28 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #29 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #30 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #31 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #32 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #33 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #34 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #35 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #36 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #37 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #38 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #39 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #40 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #41 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #42 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #43 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #44 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #45 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #46 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #47 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #48 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #49 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #50 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #51 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #52 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #53 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #54 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #55 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #56 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #57 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #58 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #59 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #60 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #61 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #62 0x4085d780 in __clone () at src/thread/arm/clone.s:23
-  #63 0x4085d780 in __clone () at src/thread/arm/clone.s:23
+  #8  0x408600f4 in start (p=0x408d2d70) at src/thread/pthread_create.c:207
+  #9  0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #10 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #11 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #12 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #13 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #14 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #15 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #16 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #17 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #18 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #19 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #20 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #21 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #22 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #23 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #24 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #25 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #26 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #27 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #28 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #29 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #30 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #31 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #32 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #33 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #34 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #35 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #36 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #37 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #38 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #39 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #40 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #41 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #42 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #43 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #44 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #45 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #46 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #47 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #48 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #49 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #50 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #51 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #52 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #53 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #54 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #55 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #56 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #57 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #58 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #59 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #60 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #61 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #62 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
+  #63 0x4085dc54 in __clone () at src/thread/arm/clone.s:24
   
   Thread 1 (Thread 192.192 (CPU#0 [running])):
   #0  parked () at sleeper.c:107
   #1  0x004007fc in main () at sleeper.c:126
-  __cp_begin/__cp_end: not resolvable (musl-dbg missing?)
+  __cp_begin..__cp_end: 0x4085dc6c..0x4085dc8c
   musl-syscall-cp: applied 3 times
-    declined (arm32: no symbols and r12 != sp+16): 186
+    declined (arm32: pc outside __cp_begin..__cp_end): 184
 

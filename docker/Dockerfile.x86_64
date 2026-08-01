@@ -1,7 +1,7 @@
 # Reference platform. Native here, so no qemu and no emulation at all.
 #
 #   docker build -f docker/Dockerfile.x86_64 -t alpine-bugreport-x86_64 .
-FROM --platform=linux/amd64 amd64/alpine:3.23
+FROM --platform=linux/amd64 amd64/alpine:3.24
 
 RUN apk add --no-cache \
     build-base \

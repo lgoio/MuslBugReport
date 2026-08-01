@@ -154,7 +154,7 @@ head1 "emulation"
 # registration details differ between qemu-user-static, binfmt-support and
 # docker's own installer, so checking package names would prove nothing.
 platform_works() {
-	$DOCKER run --rm --platform "$1" alpine:3.23 true >/dev/null 2>&1
+	$DOCKER run --rm --platform "$1" alpine:3.24 true >/dev/null 2>&1
 }
 
 missing_platforms() {
@@ -260,12 +260,11 @@ say "    Expected picture:"
 say "      x86_64   both passes show the full call chain - no gap to begin with"
 say "      armhf    run 1 truncated, run 2 complete"
 say "      armv7    run 1 truncated, run 2 complete"
-say "      aarch64  run 1 truncated, run 2 still truncated - the same gap"
-say "               exists there, but the unwinder only implements the"
-say "               32-bit ARM frame layout and declines on aarch64"
+say "      aarch64  run 1 truncated, run 2 complete"
 say ""
 say "    Attach the report-*.txt files. The contrast is the argument:"
-say "    same source, same Alpine version, same packages."
+say "    same source, same Alpine version, same packages - only the"
+say "    architecture differs."
 say ""
 for LABEL in $DONE_LABELS; do
 	if grep -qiE 'ptrace|Function not implemented|Operation not permitted' \

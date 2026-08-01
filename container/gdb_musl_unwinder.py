@@ -11,7 +11,7 @@
 # affected. gdb stops after one or two frames and the whole application part of
 # the backtrace is lost.
 #
-# Measured against Alpine v3.23 (musl 1.2.5-r23), runtime library plus
+# Measured against Alpine v3.24 (musl 1.2.6-r2), runtime library plus
 # musl-dbg, asking whether any FDE covers __cp_begin:
 #
 #     x86_64    covered       - nothing to do
@@ -92,56 +92,61 @@ class _FrameId(object):
 def _symbol_address(name):
     """Address of a static symbol, or None.
 
-    Minimal symbols only. An earlier version fell back to
-    gdb.execute("info address ..."), which is a trap: this runs inside an
-    unwinder callback, so it re-enters gdb from within gdb's own frame
-    machinery. Where the minimal-symbol lookup failed, that fallback hung the
-    session - the backtrace stopped right after the breakpoint and never
-    returned. Declining is the correct answer instead.
+    __cp_begin and __cp_end are static, so they are not visible from the
+    application context - taking their address explicitly is what works.
+    gdb.lookup_minimal_symbol does not exist in every gdb (16.3 does not have
+    it), and a bare hasattr check is not enough, so both routes are tried.
+
+    MUST NOT be called from inside an unwinder callback: evaluating an
+    expression re-enters gdb from within its own frame machinery, which hangs
+    the session. _CpRange resolves ahead of time and the callback only reads
+    the cached result.
     """
     try:
-        msym = gdb.lookup_minimal_symbol(name)
-        if msym is not None:
-            value = msym.value()
-            try:
-                return int(value.address)
-            except Exception:
-                return int(value)
+        return int(gdb.parse_and_eval("(unsigned long)&%s" % name))
+    except Exception:
+        pass
+    try:
+        text = gdb.execute("info address %s" % name, to_string=True)
+        match = re.search(r"0x[0-9a-fA-F]+", text)
+        if match:
+            return int(match.group(0), 16)
     except Exception:
         pass
     return None
 
 
 class _CpRange(object):
-    """[__cp_begin, __cp_end), resolved once and re-resolved when a new
-    objfile shows up - musl may not be loaded yet on the first attempt."""
+    """[__cp_begin, __cp_end), resolved outside the unwinder callback.
+
+    Resolution is attempted when this file is sourced and again whenever an
+    objfile appears, because musl is usually not loaded yet at source time -
+    the command file connects to the process afterwards.
+    """
 
     lo = None
     hi = None
-    tried = False
 
     @classmethod
-    def reset(cls, event=None):
-        cls.lo = None
-        cls.hi = None
-        cls.tried = False
-
-    @classmethod
-    def get(cls):
-        if cls.lo is not None or cls.tried:
-            return cls.lo, cls.hi
-        cls.tried = True
+    def resolve(cls, event=None):
+        if cls.lo is not None:
+            return
         lo = _symbol_address("__cp_begin")
         hi = _symbol_address("__cp_end")
         if lo is not None and hi is not None and hi > lo:
             cls.lo, cls.hi = lo, hi
+
+    @classmethod
+    def get(cls):
+        # Cache only. Resolving here would deadlock, see _symbol_address.
         return cls.lo, cls.hi
 
 
-try:
-    gdb.events.new_objfile.connect(_CpRange.reset)
-except Exception:
-    pass
+for _event in ("new_objfile", "stop"):
+    try:
+        getattr(gdb.events, _event).connect(_CpRange.resolve)
+    except Exception:
+        pass
 
 
 class MuslSyscallCp(Unwinder):
@@ -343,6 +348,7 @@ class MuslUnwinderStatus(gdb.Command):
             "musl-unwinder-status", gdb.COMMAND_STATUS)
 
     def invoke(self, arg, from_tty):
+        _CpRange.resolve()
         lo, hi = _CpRange.get()
         if lo is None:
             gdb.write("__cp_begin/__cp_end: not resolvable (musl-dbg missing?)\n")
@@ -358,6 +364,7 @@ class MuslUnwinderStatus(gdb.Command):
 
 MuslUnwinderStatus()
 gdb.unwinder.register_unwinder(None, MuslSyscallCp(), replace=True)
+_CpRange.resolve()
 try:
     gdb.invalidate_cached_frames()
 except Exception:
