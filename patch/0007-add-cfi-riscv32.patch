@@ -8,8 +8,9 @@ matched for both widths already.
 clone.s carries no end-of-stack marker and needs none.
 
 Verified by assembling both files with and without the generator using
--march=rv32i -mabi=ilp32, and reading the FDE coverage back out. Alpine
-packages no riscv32, so musl was not built as a whole for this one.
+-march=rv32i -mabi=ilp32 in the riscv64 Alpine container, and reading the FDE
+coverage back out. Alpine has no riscv32 image, so musl was not built as a
+whole for this one.
 
 ---
 --- /dev/null

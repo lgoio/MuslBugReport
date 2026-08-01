@@ -211,10 +211,10 @@ half on arm, aarch64 and loongarch64, and the generators turn that into CFI, so
 `__clone` stops repeating. The others carry no such marker and need none:
 `__clone` already appears once per thread there.
 
-‡ Alpine packages no riscv32, so only the two affected files were assembled
-with `-march=rv32i -mabi=ilp32` and the coverage read back, rather than
-building musl as a whole. In these files riscv32 differs from riscv64 only in
-load and store widths.
+‡ Alpine has no riscv32 image, so the two affected files were assembled in
+the riscv64 container with `-march=rv32i -mabi=ilp32` and the coverage read
+back, rather than building musl as a whole. In these files riscv32 differs
+from riscv64 only in load and store widths.
 
 Details and how to verify: [`patch/README.md`](patch/README.md).
 
